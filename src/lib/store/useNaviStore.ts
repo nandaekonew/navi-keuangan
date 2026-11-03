@@ -262,6 +262,7 @@ interface NaviStoreState {
   switchPersona: (persona: UserPersona) => void;
   setCurrentUser: (user: UserProfile) => void;
   setHouseholdName: (name: string) => void;
+  updateMemberName: (id: string, newName: string) => void;
   joinHouseholdByCode: (code: string, newMemberName: string, persona: UserPersona) => boolean;
 
   // CRUD Transaksi
@@ -329,6 +330,29 @@ export const useNaviStore = create<NaviStoreState>()(
 
       setCurrentUser: (user) => set({ currentUser: user }),
       setHouseholdName: (name) => set((s) => ({ household: { ...s.household, name } })),
+
+      updateMemberName: (id: string, newName: string) => {
+        const trimmed = newName.trim();
+        if (!trimmed) return;
+        set((state) => {
+          const updatedMembers = state.members.map((m) =>
+            m.id === id ? { ...m, full_name: trimmed } : m
+          );
+          const updatedCurrentUser =
+            state.currentUser.id === id
+              ? { ...state.currentUser, full_name: trimmed }
+              : state.currentUser;
+          return {
+            members: updatedMembers,
+            currentUser: updatedCurrentUser,
+          };
+        });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('users').update({ full_name: trimmed }).eq('id', id).then();
+        }
+      },
 
       joinHouseholdByCode: (code, newMemberName, persona) => {
         const cleanCode = code.trim().toUpperCase();

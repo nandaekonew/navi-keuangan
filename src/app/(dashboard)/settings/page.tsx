@@ -14,6 +14,7 @@ import {
   Shield,
   RefreshCw,
   Share2,
+  Pencil,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -24,6 +25,7 @@ export default function SettingsPage() {
     members,
     switchPersona,
     joinHouseholdByCode,
+    updateMemberName,
   } = useNaviStore();
 
   const [nameInput, setNameInput] = useState(household.name);
@@ -32,6 +34,8 @@ export default function SettingsPage() {
   const [newMemberName, setNewMemberName] = useState('');
   const [joinPersona, setJoinPersona] = useState<UserPersona>('istri');
   const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState<string>('');
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(household.invite_code);
@@ -159,16 +163,59 @@ export default function SettingsPage() {
                     {isSuami ? '👨💼' : '👩💼'}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        {member.full_name}
-                      </span>
-                      {isCurrent && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                          Sedang Aktif di HP ini
+                    {editingMemberId === member.id ? (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <input
+                          type="text"
+                          value={editingNameValue}
+                          onChange={(e) => setEditingNameValue(e.target.value)}
+                          className="px-2.5 py-1 text-xs font-bold rounded-xl border border-emerald-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none ring-1 ring-emerald-500"
+                          autoFocus
+                          placeholder="Masukkan nama..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingNameValue.trim()) {
+                              updateMemberName(member.id, editingNameValue.trim());
+                            }
+                            setEditingMemberId(null);
+                          }}
+                          className="px-2.5 py-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition"
+                        >
+                          Simpan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingMemberId(null)}
+                          className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          {member.full_name}
                         </span>
-                      )}
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingMemberId(member.id);
+                            setEditingNameValue(member.full_name);
+                          }}
+                          title="Klik untuk ubah nama"
+                          className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            Sedang Aktif di HP ini
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <span className="text-[10px] text-slate-500 capitalize">
                       Peran: {member.persona} • Akses: {member.role}
                     </span>
