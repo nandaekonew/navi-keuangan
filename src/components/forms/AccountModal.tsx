@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useNaviStore } from '@/lib/store/useNaviStore';
-import { AccountType } from '@/types';
+import { Account, AccountType } from '@/types';
 import { parseRupiahInput } from '@/lib/utils';
 
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
+  accountToEdit?: Account | null;
 }
 
-export function AccountModal({ isOpen, onClose }: AccountModalProps) {
-  const { addAccount, household } = useNaviStore();
+export function AccountModal({ isOpen, onClose, accountToEdit }: AccountModalProps) {
+  const { addAccount, updateAccount, household } = useNaviStore();
 
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('bank');
@@ -20,6 +21,24 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
   const [balance, setBalance] = useState<number>(0);
   const [balanceStr, setBalanceStr] = useState('');
   const [color, setColor] = useState('#2563eb');
+
+  useEffect(() => {
+    if (accountToEdit) {
+      setName(accountToEdit.name);
+      setType(accountToEdit.type);
+      setAccountNumber(accountToEdit.account_number || '');
+      setBalance(accountToEdit.balance);
+      setBalanceStr(accountToEdit.balance > 0 ? accountToEdit.balance.toLocaleString('id-ID') : '');
+      setColor(accountToEdit.color || '#2563eb');
+    } else {
+      setName('');
+      setType('bank');
+      setAccountNumber('');
+      setBalance(0);
+      setBalanceStr('');
+      setColor('#2563eb');
+    }
+  }, [accountToEdit, isOpen]);
 
   const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseRupiahInput(e.target.value);
@@ -31,19 +50,25 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
     e.preventDefault();
     if (!name.trim()) return;
 
-    addAccount({
-      household_id: household.id,
-      name: name.trim(),
-      type,
-      account_number: accountNumber.trim() || undefined,
-      balance,
-      color,
-    });
+    if (accountToEdit) {
+      updateAccount(accountToEdit.id, {
+        name: name.trim(),
+        type,
+        account_number: accountNumber.trim() || undefined,
+        balance,
+        color,
+      });
+    } else {
+      addAccount({
+        household_id: household.id,
+        name: name.trim(),
+        type,
+        account_number: accountNumber.trim() || undefined,
+        balance,
+        color,
+      });
+    }
 
-    setName('');
-    setAccountNumber('');
-    setBalance(0);
-    setBalanceStr('');
     onClose();
   };
 
@@ -51,8 +76,12 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Tambah Rekening / Dompet Baru"
-      subtitle="Kelola rekening bank, e-wallet, uang kas fisik, atau pos tabungan keluarga"
+      title={accountToEdit ? 'Ubah Rekening / Dompet' : 'Tambah Rekening / Dompet Baru'}
+      subtitle={
+        accountToEdit
+          ? 'Perbarui detail nama, nomor rekening, saldo, atau warna'
+          : 'Kelola rekening bank, e-wallet, uang kas fisik, atau pos tabungan keluarga'
+      }
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -104,7 +133,7 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
 
         <div>
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Saldo Awal (Rp)
+            {accountToEdit ? 'Saldo Rekening (Rp)' : 'Saldo Awal (Rp)'}
           </label>
           <input
             type="text"
@@ -140,7 +169,7 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
             type="submit"
             className="w-full py-3 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition"
           >
-            Simpan Rekening
+            {accountToEdit ? 'Simpan Perubahan' : 'Simpan Rekening'}
           </button>
         </div>
       </form>

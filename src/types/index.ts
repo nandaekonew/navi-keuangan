@@ -92,6 +92,6 @@ export interface RecurringBill {
   due_day: number;
   is_paid: boolean;
   last_paid_at?: string | null;
-  notes?: string;
+  notes?: string | null;
   created_at?: string;
 }

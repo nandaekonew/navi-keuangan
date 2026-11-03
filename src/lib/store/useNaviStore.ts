@@ -281,6 +281,7 @@ interface NaviStoreState {
 
   // Tagihan Rutin
   addRecurringBill: (bill: Omit<RecurringBill, 'id' | 'created_at'>) => void;
+  updateRecurringBill: (id: string, data: Partial<RecurringBill>) => void;
   payRecurringBill: (billId: string, accountId?: string) => void;
   toggleBillPaidStatus: (billId: string) => void;
   deleteRecurringBill: (billId: string) => void;
@@ -641,6 +642,23 @@ export const useNaviStore = create<NaviStoreState>()(
             ])
             .then(({ error }) => {
               if (error) console.error('Error adding recurring bill to Supabase:', error);
+            });
+        }
+      },
+
+      updateRecurringBill: (id, data) => {
+        set((s) => ({
+          recurringBills: s.recurringBills.map((b) => (b.id === id ? { ...b, ...data } : b)),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('recurring_bills')
+            .update(data)
+            .eq('id', id)
+            .then(({ error }) => {
+              if (error) console.error('Error updating recurring bill in Supabase:', error);
             });
         }
       },

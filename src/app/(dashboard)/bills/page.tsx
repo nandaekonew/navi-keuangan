@@ -5,6 +5,7 @@ import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatRupiah, formatDateIndo } from '@/lib/utils';
 import { BillModal } from '@/components/forms/BillModal';
 import { Modal } from '@/components/ui/Modal';
+import { RecurringBill } from '@/types';
 import {
   CheckSquare,
   CheckCircle2,
@@ -14,6 +15,7 @@ import {
   AlertCircle,
   Trash2,
   Building2,
+  Pencil,
 } from 'lucide-react';
 
 export default function BillsPage() {
@@ -27,6 +29,7 @@ export default function BillsPage() {
   } = useNaviStore();
 
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+  const [billToEdit, setBillToEdit] = useState<RecurringBill | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [payingBillId, setPayingBillId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(accounts[0]?.id || '');
@@ -65,7 +68,10 @@ export default function BillsPage() {
         </div>
 
         <button
-          onClick={() => setIsBillModalOpen(true)}
+          onClick={() => {
+            setBillToEdit(null);
+            setIsBillModalOpen(true);
+          }}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
@@ -152,7 +158,10 @@ export default function BillsPage() {
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 space-y-2">
             <p>Belum ada tagihan rutin yang terdaftar pada filter ini.</p>
             <button
-              onClick={() => setIsBillModalOpen(true)}
+              onClick={() => {
+                setBillToEdit(null);
+                setIsBillModalOpen(true);
+              }}
               className="text-emerald-600 font-bold hover:underline"
             >
               + Tambah Tagihan Baru
@@ -269,6 +278,17 @@ export default function BillsPage() {
 
                     <button
                       onClick={() => {
+                        setBillToEdit(bill);
+                        setIsBillModalOpen(true);
+                      }}
+                      title="Ubah Tagihan"
+                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={() => {
                         if (confirm(`Hapus tagihan rutin "${bill.name}"?`)) {
                           deleteRecurringBill(bill.id);
                         }
@@ -337,7 +357,14 @@ export default function BillsPage() {
         )}
       </Modal>
 
-      <BillModal isOpen={isBillModalOpen} onClose={() => setIsBillModalOpen(false)} />
+      <BillModal
+        isOpen={isBillModalOpen}
+        onClose={() => {
+          setIsBillModalOpen(false);
+          setBillToEdit(null);
+        }}
+        billToEdit={billToEdit}
+      />
     </div>
   );
 }

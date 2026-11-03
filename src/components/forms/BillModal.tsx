@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useNaviStore } from '@/lib/store/useNaviStore';
+import { RecurringBill } from '@/types';
 import { parseRupiahInput } from '@/lib/utils';
 
 interface BillModalProps {
   isOpen: boolean;
   onClose: () => void;
+  billToEdit?: RecurringBill | null;
 }
 
-export function BillModal({ isOpen, onClose }: BillModalProps) {
-  const { addRecurringBill, accounts, categories, household } = useNaviStore();
+export function BillModal({ isOpen, onClose, billToEdit }: BillModalProps) {
+  const { addRecurringBill, updateRecurringBill, accounts, categories, household } = useNaviStore();
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState<number>(0);
@@ -23,6 +25,32 @@ export function BillModal({ isOpen, onClose }: BillModalProps) {
   );
   const [notes, setNotes] = useState('');
 
+  useEffect(() => {
+    if (billToEdit) {
+      setName(billToEdit.name);
+      setAmount(billToEdit.amount);
+      setAmountStr(billToEdit.amount > 0 ? billToEdit.amount.toLocaleString('id-ID') : '');
+      setDueDay(billToEdit.due_day);
+      setPreferredAccountId(billToEdit.preferred_account_id || accounts[0]?.id || '');
+      setCategoryId(
+        billToEdit.category_id ||
+          categories.find((c) => c.name.includes('Tagihan') || c.type === 'expense')?.id ||
+          ''
+      );
+      setNotes(billToEdit.notes || '');
+    } else {
+      setName('');
+      setAmount(0);
+      setAmountStr('');
+      setDueDay(10);
+      setPreferredAccountId(accounts[0]?.id || '');
+      setCategoryId(
+        categories.find((c) => c.name.includes('Tagihan') || c.type === 'expense')?.id || ''
+      );
+      setNotes('');
+    }
+  }, [billToEdit, isOpen, accounts, categories]);
+
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseRupiahInput(e.target.value);
     setAmount(val);
@@ -33,21 +61,28 @@ export function BillModal({ isOpen, onClose }: BillModalProps) {
     e.preventDefault();
     if (!name.trim() || amount <= 0) return;
 
-    addRecurringBill({
-      household_id: household.id,
-      name: name.trim(),
-      amount,
-      due_day: Number(dueDay),
-      preferred_account_id: preferredAccountId || undefined,
-      category_id: categoryId || undefined,
-      notes: notes.trim() || undefined,
-      is_paid: false,
-    });
+    if (billToEdit) {
+      updateRecurringBill(billToEdit.id, {
+        name: name.trim(),
+        amount,
+        due_day: Number(dueDay),
+        preferred_account_id: preferredAccountId || null,
+        category_id: categoryId || null,
+        notes: notes.trim() || null,
+      });
+    } else {
+      addRecurringBill({
+        household_id: household.id,
+        name: name.trim(),
+        amount,
+        due_day: Number(dueDay),
+        preferred_account_id: preferredAccountId || undefined,
+        category_id: categoryId || undefined,
+        notes: notes.trim() || undefined,
+        is_paid: false,
+      });
+    }
 
-    setName('');
-    setAmount(0);
-    setAmountStr('');
-    setNotes('');
     onClose();
   };
 
@@ -55,8 +90,12 @@ export function BillModal({ isOpen, onClose }: BillModalProps) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Tambah Tagihan Rutin Bulanan"
-      subtitle="Catat kewajiban berkala keluarga (Listrik PLN, WiFi, PDAM, SPP Anak, BPJS)"
+      title={billToEdit ? 'Ubah Tagihan Rutin Bulanan' : 'Tambah Tagihan Rutin Bulanan'}
+      subtitle={
+        billToEdit
+          ? 'Perbarui nominal, tanggal jatuh tempo, rekening, atau catatan'
+          : 'Catat kewajiban berkala keluarga (Listrik PLN, WiFi, PDAM, SPP Anak, BPJS)'
+      }
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -162,7 +201,7 @@ export function BillModal({ isOpen, onClose }: BillModalProps) {
             type="submit"
             className="w-full py-3 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition"
           >
-            Simpan Tagihan Rutin
+            {billToEdit ? 'Simpan Perubahan Tagihan' : 'Simpan Tagihan Rutin'}
           </button>
         </div>
       </form>

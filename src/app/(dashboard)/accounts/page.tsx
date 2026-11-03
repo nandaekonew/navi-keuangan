@@ -14,7 +14,9 @@ import {
   ArrowLeftRight,
   Plus,
   Trash2,
+  Pencil,
 } from 'lucide-react';
+import { Account } from '@/types';
 
 const accountIcons: Record<string, any> = {
   bank: Building2,
@@ -35,6 +37,7 @@ const accountTypeLabels: Record<string, string> = {
 export default function AccountsPage() {
   const { accounts, deleteAccount, setTransferOpen } = useNaviStore();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [accountToEdit, setAccountToEdit] = useState<Account | null>(null);
 
   const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
 
@@ -60,7 +63,10 @@ export default function AccountsPage() {
             <span>Transfer Saldo</span>
           </button>
           <button
-            onClick={() => setIsAccountModalOpen(true)}
+            onClick={() => {
+              setAccountToEdit(null);
+              setIsAccountModalOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition"
           >
             <Plus className="w-4 h-4" />
@@ -127,19 +133,31 @@ export default function AccountsPage() {
                   </div>
                 </div>
 
-                {accounts.length > 1 && (
+                <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
                   <button
                     onClick={() => {
-                      if (confirm(`Yakin ingin menghapus rekening ${acc.name}?`)) {
-                        deleteAccount(acc.id);
-                      }
+                      setAccountToEdit(acc);
+                      setIsAccountModalOpen(true);
                     }}
-                    title="Hapus Rekening"
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-500 rounded transition"
+                    title="Ubah Rekening"
+                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Pencil className="w-4 h-4" />
                   </button>
-                )}
+                  {accounts.length > 1 && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Yakin ingin menghapus rekening ${acc.name}?`)) {
+                          deleteAccount(acc.id);
+                        }
+                      }}
+                      title="Hapus Rekening"
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
@@ -162,7 +180,11 @@ export default function AccountsPage() {
 
       <AccountModal
         isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
+        onClose={() => {
+          setIsAccountModalOpen(false);
+          setAccountToEdit(null);
+        }}
+        accountToEdit={accountToEdit}
       />
     </div>
   );
