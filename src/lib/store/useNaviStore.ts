@@ -330,7 +330,13 @@ export const useNaviStore = create<NaviStoreState>()(
       },
 
       setCurrentUser: (user) => set({ currentUser: user }),
-      setHouseholdName: (name) => set((s) => ({ household: { ...s.household, name } })),
+      setHouseholdName: (name) => {
+        set((s) => ({ household: { ...s.household, name } }));
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('households').update({ name }).eq('id', get().household.id).then();
+        }
+      },
 
       updateMemberName: (id: string, newName: string) => {
         const trimmed = newName.trim();
@@ -394,6 +400,11 @@ export const useNaviStore = create<NaviStoreState>()(
             members: [...state.members.filter((m) => m.id !== newUserId), newProfile],
             currentUser: newProfile,
           }));
+
+          if (isSupabaseConfigured()) {
+            const supabase = createClient();
+            supabase.from('users').upsert([newProfile]).then();
+          }
           return true;
         }
         return false;
@@ -567,6 +578,7 @@ export const useNaviStore = create<NaviStoreState>()(
       },
 
       setBudget: (categoryId, targetAmount, month = currentMonth, year = currentYear) => {
+        let savedBudget: Budget | undefined;
         set((state) => {
           const existingIndex = state.budgets.findIndex(
             (b) => b.category_id === categoryId && b.month === month && b.year === year
@@ -574,13 +586,14 @@ export const useNaviStore = create<NaviStoreState>()(
 
           if (existingIndex >= 0) {
             const updated = [...state.budgets];
-            updated[existingIndex] = {
+            savedBudget = {
               ...updated[existingIndex],
               target_amount: targetAmount,
             };
+            updated[existingIndex] = savedBudget;
             return { budgets: updated };
           } else {
-            const newBudget: Budget = {
+            savedBudget = {
               id: `b-${Date.now()}`,
               household_id: state.household.id,
               category_id: categoryId,
@@ -588,9 +601,16 @@ export const useNaviStore = create<NaviStoreState>()(
               month,
               year,
             };
-            return { budgets: [...state.budgets, newBudget] };
+            return { budgets: [...state.budgets, savedBudget] };
           }
         });
+
+        if (isSupabaseConfigured() && savedBudget) {
+          const supabase = createClient();
+          supabase.from('budgets').upsert([savedBudget]).then(({ error }) => {
+            if (error) console.error('Error saving budget to Supabase:', error);
+          });
+        }
       },
 
       addRecurringBill: (billData) => {
@@ -601,6 +621,28 @@ export const useNaviStore = create<NaviStoreState>()(
           created_at: new Date().toISOString(),
         };
         set((s) => ({ recurringBills: [...s.recurringBills, newBill] }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('recurring_bills')
+            .insert([
+              {
+                id: newBill.id,
+                household_id: newBill.household_id,
+                name: newBill.name,
+                amount: newBill.amount,
+                due_day: newBill.due_day,
+                is_paid: newBill.is_paid,
+                preferred_account_id: newBill.preferred_account_id || null,
+                category_id: newBill.category_id || null,
+                notes: newBill.notes || null,
+              },
+            ])
+            .then(({ error }) => {
+              if (error) console.error('Error adding recurring bill to Supabase:', error);
+            });
+        }
       },
 
       payRecurringBill: (billId, accountId) => {
@@ -623,28 +665,73 @@ export const useNaviStore = create<NaviStoreState>()(
           description: `Pembayaran Tagihan Rutin: ${bill.name}`,
         });
 
+        const paidAt = new Date().toISOString();
         // Tandai sudah dibayar
         set({
           recurringBills: state.recurringBills.map((b) =>
             b.id === billId
-              ? { ...b, is_paid: true, last_paid_at: new Date().toISOString() }
+              ? { ...b, is_paid: true, last_paid_at: paidAt }
               : b
           ),
         });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('recurring_bills')
+            .update({ is_paid: true, last_paid_at: paidAt })
+            .eq('id', billId)
+            .then(({ error }) => {
+              if (error) console.error('Error updating paid bill in Supabase:', error);
+            });
+        }
       },
 
       toggleBillPaidStatus: (billId) => {
-        set((state) => ({
-          recurringBills: state.recurringBills.map((b) =>
-            b.id === billId ? { ...b, is_paid: !b.is_paid } : b
-          ),
-        }));
+        let updatedPaidStatus = false;
+        let paidAt: string | null = null;
+        set((state) => {
+          const updated = state.recurringBills.map((b) => {
+            if (b.id === billId) {
+              updatedPaidStatus = !b.is_paid;
+              paidAt = !b.is_paid ? new Date().toISOString() : null;
+              return { ...b, is_paid: updatedPaidStatus, last_paid_at: paidAt };
+            }
+            return b;
+          });
+          return { recurringBills: updated };
+        });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('recurring_bills')
+            .update({
+              is_paid: updatedPaidStatus,
+              last_paid_at: paidAt,
+            })
+            .eq('id', billId)
+            .then(({ error }) => {
+              if (error) console.error('Error updating bill paid status in Supabase:', error);
+            });
+        }
       },
 
       deleteRecurringBill: (billId) => {
         set((s) => ({
           recurringBills: s.recurringBills.filter((b) => b.id !== billId),
         }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('recurring_bills')
+            .delete()
+            .eq('id', billId)
+            .then(({ error }) => {
+              if (error) console.error('Error deleting recurring bill from Supabase:', error);
+            });
+        }
       },
 
       syncWithSupabase: async () => {

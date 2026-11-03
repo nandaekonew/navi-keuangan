@@ -148,130 +148,142 @@ export default function BillsPage() {
 
       {/* Bills Cards List */}
       <div className="space-y-3">
-        {filteredBills.map((bill) => {
-          const account = accounts.find((a) => a.id === bill.preferred_account_id);
-          const category = categories.find((c) => c.id === bill.category_id);
-
-          return (
-            <div
-              key={bill.id}
-              className={`p-4 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                bill.is_paid
-                  ? 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-80'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
-              }`}
+        {filteredBills.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 space-y-2">
+            <p>Belum ada tagihan rutin yang terdaftar pada filter ini.</p>
+            <button
+              onClick={() => setIsBillModalOpen(true)}
+              className="text-emerald-600 font-bold hover:underline"
             >
-              <div className="flex items-start gap-3.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!bill.is_paid) {
-                      setPayingBillId(bill.id);
-                      setSelectedAccountId(bill.preferred_account_id || accounts[0]?.id || '');
-                    } else {
-                      toggleBillPaidStatus(bill.id);
-                    }
-                  }}
-                  className="mt-0.5 text-slate-400 hover:text-emerald-600 transition shrink-0"
-                >
-                  {bill.is_paid ? (
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                  ) : (
-                    <Circle className="w-6 h-6" />
-                  )}
-                </button>
+              + Tambah Tagihan Baru
+            </button>
+          </div>
+        ) : (
+          filteredBills.map((bill) => {
+            const account = accounts.find((a) => a.id === bill.preferred_account_id);
+            const category = categories.find((c) => c.id === bill.category_id);
 
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3
-                      className={`font-bold text-sm ${
-                        bill.is_paid
-                          ? 'line-through text-slate-400'
-                          : 'text-slate-900 dark:text-white'
-                      }`}
-                    >
-                      {bill.name}
-                    </h3>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        bill.is_paid
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
-                    >
-                      {bill.is_paid ? 'Lunas' : 'Menunggu Bayar'}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      Jatuh tempo tgl {bill.due_day} setiap bulan
-                    </span>
-                    {account && (
-                      <>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                          Rek: {account.name}
-                        </span>
-                      </>
-                    )}
-                    {bill.notes && (
-                      <>
-                        <span>•</span>
-                        <span className="italic text-slate-400">{bill.notes}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Amount & Quick Actions */}
-              <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800">
-                <div className="text-left sm:text-right">
-                  <div className="text-[11px] text-slate-400">Nominal Tagihan</div>
-                  <div className="text-base font-black text-slate-900 dark:text-white">
-                    {formatRupiah(bill.amount)}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {!bill.is_paid ? (
-                    <button
-                      onClick={() => {
+            return (
+              <div
+                key={bill.id}
+                className={`p-4 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  bill.is_paid
+                    ? 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-80'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
+                }`}
+              >
+                <div className="flex items-start gap-3.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!bill.is_paid) {
                         setPayingBillId(bill.id);
                         setSelectedAccountId(bill.preferred_account_id || accounts[0]?.id || '');
-                      }}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20 transition"
-                    >
-                      Bayar Sekarang
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => toggleBillPaidStatus(bill.id)}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"
-                    >
-                      Batal Lunas
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      if (confirm(`Hapus tagihan rutin "${bill.name}"?`)) {
-                        deleteRecurringBill(bill.id);
+                      } else {
+                        toggleBillPaidStatus(bill.id);
                       }
                     }}
-                    title="Hapus Tagihan"
-                    className="p-1.5 text-slate-300 hover:text-red-500 rounded-lg transition"
+                    className="mt-0.5 text-slate-400 hover:text-emerald-600 transition shrink-0"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    {bill.is_paid ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    ) : (
+                      <Circle className="w-6 h-6" />
+                    )}
                   </button>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3
+                        className={`font-bold text-sm ${
+                          bill.is_paid
+                            ? 'line-through text-slate-400'
+                            : 'text-slate-900 dark:text-white'
+                        }`}
+                      >
+                        {bill.name}
+                      </h3>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          bill.is_paid
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {bill.is_paid ? 'Lunas' : 'Menunggu Bayar'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        Jatuh tempo tgl {bill.due_day} setiap bulan
+                      </span>
+                      {account && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                            Rek: {account.name}
+                          </span>
+                        </>
+                      )}
+                      {bill.notes && (
+                        <>
+                          <span>•</span>
+                          <span className="italic text-slate-400">{bill.notes}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount & Quick Actions */}
+                <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800">
+                  <div className="text-left sm:text-right">
+                    <div className="text-[11px] text-slate-400">Nominal Tagihan</div>
+                    <div className="text-base font-black text-slate-900 dark:text-white">
+                      {formatRupiah(bill.amount)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {!bill.is_paid ? (
+                      <button
+                        onClick={() => {
+                          setPayingBillId(bill.id);
+                          setSelectedAccountId(bill.preferred_account_id || accounts[0]?.id || '');
+                        }}
+                        className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20 transition"
+                      >
+                        Bayar Sekarang
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => toggleBillPaidStatus(bill.id)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"
+                      >
+                        Batal Lunas
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (confirm(`Hapus tagihan rutin "${bill.name}"?`)) {
+                          deleteRecurringBill(bill.id);
+                        }
+                      }}
+                      title="Hapus Tagihan"
+                      className="p-1.5 text-slate-300 hover:text-red-500 rounded-lg transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Pay Confirmation Modal */}
