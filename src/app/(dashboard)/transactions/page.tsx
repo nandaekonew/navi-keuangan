@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatDateIndo, formatRupiah, exportTransactionsToCSV } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
+import { EditTransactionModal } from '@/components/forms/EditTransactionModal';
+import { Transaction } from '@/types';
 import {
   Receipt,
   Download,
@@ -15,6 +17,7 @@ import {
   ArrowLeftRight,
   Trash2,
   Image,
+  Pencil,
 } from 'lucide-react';
 
 export default function TransactionsPage() {
@@ -32,6 +35,8 @@ export default function TransactionsPage() {
   const [selectedPersona, setSelectedPersona] = useState<string>('all');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Filter transactions
   const filteredTransactions = transactions.filter((tx) => {
@@ -314,13 +319,30 @@ export default function TransactionsPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => deleteTransaction(tx.id)}
-                      title="Hapus"
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 rounded transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setTransactionToEdit(tx);
+                          setIsEditModalOpen(true);
+                        }}
+                        title="Ubah Transaksi"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (confirm('Yakin ingin menghapus transaksi ini?')) {
+                            deleteTransaction(tx.id);
+                          }
+                        }}
+                        title="Hapus"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -346,6 +368,16 @@ export default function TransactionsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Modal Edit Transaksi */}
+      <EditTransactionModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setTransactionToEdit(null);
+        }}
+        transaction={transactionToEdit}
+      />
     </div>
   );
 }

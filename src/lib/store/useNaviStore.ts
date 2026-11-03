@@ -268,6 +268,7 @@ interface NaviStoreState {
 
   // CRUD Transaksi
   addTransaction: (data: Omit<Transaction, 'id' | 'created_at'>) => void;
+  updateTransaction: (id: string, data: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
 
   // CRUD Akun
@@ -480,6 +481,86 @@ export const useNaviStore = create<NaviStoreState>()(
               supabase.from('accounts').update({ balance: updatedDest.balance }).eq('id', updatedDest.id).then();
             }
           }
+        }
+      },
+
+      updateTransaction: (id, updatedData) => {
+        const state = get();
+        const oldTx = state.transactions.find((t) => t.id === id);
+        if (!oldTx) return;
+
+        const newTx: Transaction = {
+          ...oldTx,
+          ...updatedData,
+        };
+
+        // 1. Rollback efek saldo transaksi lama
+        let currentAccounts = state.accounts.map((acc) => {
+          let bal = acc.balance;
+          if (oldTx.type === 'income' && acc.id === oldTx.account_id) {
+            bal -= oldTx.amount;
+          } else if (oldTx.type === 'expense' && acc.id === oldTx.account_id) {
+            bal += oldTx.amount;
+          } else if (oldTx.type === 'transfer') {
+            if (acc.id === oldTx.account_id) bal += oldTx.amount;
+            if (acc.id === oldTx.destination_account_id) bal -= oldTx.amount;
+          }
+          return { ...acc, balance: bal };
+        });
+
+        // 2. Terapkan efek saldo transaksi baru
+        currentAccounts = currentAccounts.map((acc) => {
+          let bal = acc.balance;
+          if (newTx.type === 'income' && acc.id === newTx.account_id) {
+            bal += newTx.amount;
+          } else if (newTx.type === 'expense' && acc.id === newTx.account_id) {
+            bal -= newTx.amount;
+          } else if (newTx.type === 'transfer') {
+            if (acc.id === newTx.account_id) bal -= newTx.amount;
+            if (acc.id === newTx.destination_account_id) bal += newTx.amount;
+          }
+          return { ...acc, balance: bal };
+        });
+
+        // 3. Simpan perubahan ke state
+        set({
+          transactions: state.transactions.map((t) => (t.id === id ? newTx : t)),
+          accounts: currentAccounts,
+        });
+
+        // 4. Sinkronisasi ke Supabase
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('transactions')
+            .update({
+              account_id: newTx.account_id,
+              destination_account_id: newTx.destination_account_id || null,
+              category_id: newTx.category_id || null,
+              user_id: newTx.user_id,
+              type: newTx.type,
+              amount: newTx.amount,
+              transaction_date: newTx.transaction_date,
+              description: newTx.description || null,
+              receipt_url: newTx.receipt_url || null,
+            })
+            .eq('id', id)
+            .then(({ error }) => {
+              if (error) console.error('Error updating transaction in Supabase:', error);
+            });
+
+          const affectedAccountIds = new Set<string>();
+          if (oldTx.account_id) affectedAccountIds.add(oldTx.account_id);
+          if (oldTx.destination_account_id) affectedAccountIds.add(oldTx.destination_account_id);
+          if (newTx.account_id) affectedAccountIds.add(newTx.account_id);
+          if (newTx.destination_account_id) affectedAccountIds.add(newTx.destination_account_id);
+
+          affectedAccountIds.forEach((accId) => {
+            const acc = currentAccounts.find((a) => a.id === accId);
+            if (acc) {
+              supabase.from('accounts').update({ balance: acc.balance }).eq('id', acc.id).then();
+            }
+          });
         }
       },
 

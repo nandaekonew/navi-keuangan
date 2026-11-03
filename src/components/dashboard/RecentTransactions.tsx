@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatDateIndo, formatRupiah } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
+import { EditTransactionModal } from '@/components/forms/EditTransactionModal';
+import { Transaction } from '@/types';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -13,11 +15,14 @@ import {
   Trash2,
   Image,
   ArrowRight,
+  Pencil,
 } from 'lucide-react';
 
 export function RecentTransactions() {
   const { transactions, accounts, categories, members, deleteTransaction } = useNaviStore();
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -147,9 +152,24 @@ export function RecentTransactions() {
                   </div>
 
                   <button
-                    onClick={() => deleteTransaction(tx.id)}
+                    onClick={() => {
+                      setTransactionToEdit(tx);
+                      setIsEditModalOpen(true);
+                    }}
+                    title="Ubah Transaksi"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (confirm('Hapus transaksi ini?')) {
+                        deleteTransaction(tx.id);
+                      }
+                    }}
                     title="Hapus Transaksi"
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-500 rounded transition"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -177,6 +197,16 @@ export function RecentTransactions() {
           </div>
         )}
       </Modal>
+
+      {/* Edit Transaction Modal */}
+      <EditTransactionModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setTransactionToEdit(null);
+        }}
+        transaction={transactionToEdit}
+      />
     </div>
   );
 }
