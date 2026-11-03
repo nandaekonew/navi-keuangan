@@ -276,6 +276,11 @@ interface NaviStoreState {
   deleteAccount: (id: string) => void;
   transferFunds: (sourceAccountId: string, targetAccountId: string, amount: number, notes?: string) => void;
 
+  // CRUD Kategori
+  addCategory: (category: Omit<Category, 'id' | 'created_at'>, initialTargetAmount?: number) => void;
+  updateCategory: (id: string, data: Partial<Category>) => void;
+  deleteCategory: (id: string) => void;
+
   // CRUD Budgets
   setBudget: (categoryId: string, targetAmount: number, month?: number, year?: number) => void;
 
@@ -576,6 +581,59 @@ export const useNaviStore = create<NaviStoreState>()(
           transaction_date: new Date().toISOString().split('T')[0],
           description: notes || `Transfer dari ${sourceAcc.name} ke ${targetAcc.name}`,
         });
+      },
+
+      addCategory: (categoryData, initialTargetAmount) => {
+        const newCat: Category = {
+          ...categoryData,
+          id: `cat-${Date.now()}`,
+          created_at: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          categories: [...state.categories, newCat],
+        }));
+
+        if (initialTargetAmount && initialTargetAmount > 0) {
+          get().setBudget(newCat.id, initialTargetAmount);
+        }
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('categories').insert([newCat]).then(({ error }) => {
+            if (error) console.error('Error inserting category into Supabase:', error);
+          });
+        }
+      },
+
+      updateCategory: (id, data) => {
+        set((state) => ({
+          categories: state.categories.map((c) => (c.id === id ? { ...c, ...data } : c)),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('categories').update(data).eq('id', id).then(({ error }) => {
+            if (error) console.error('Error updating category in Supabase:', error);
+          });
+        }
+      },
+
+      deleteCategory: (id) => {
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== id),
+          budgets: state.budgets.filter((b) => b.category_id !== id),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('categories').delete().eq('id', id).then(({ error }) => {
+            if (error) console.error('Error deleting category from Supabase:', error);
+          });
+          supabase.from('budgets').delete().eq('category_id', id).then(({ error }) => {
+            if (error) console.error('Error deleting category budgets from Supabase:', error);
+          });
+        }
       },
 
       setBudget: (categoryId, targetAmount, month = currentMonth, year = currentYear) => {

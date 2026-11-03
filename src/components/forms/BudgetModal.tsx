@@ -9,12 +9,14 @@ interface BudgetModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialCategoryId?: string;
+  onOpenCategoryModal?: () => void;
 }
 
 export function BudgetModal({
   isOpen,
   onClose,
   initialCategoryId,
+  onOpenCategoryModal,
 }: BudgetModalProps) {
   const { categories, budgets, setBudget } = useNaviStore();
 
@@ -83,9 +85,23 @@ export function BudgetModal({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Kategori Pengeluaran
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Kategori Pengeluaran
+            </label>
+            {onOpenCategoryModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenCategoryModal();
+                }}
+                className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                + Tambah Kategori Baru
+              </button>
+            )}
+          </div>
           <select
             value={selectedCatId}
             onChange={handleCategoryChange}

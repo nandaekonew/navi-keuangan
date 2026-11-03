@@ -4,42 +4,16 @@ import React, { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatRupiah, parseRupiahInput } from '@/lib/utils';
+import { CATEGORY_ICON_MAP } from '@/lib/categoryIcons';
 import { TransactionType } from '@/types';
 import {
   Camera,
   X,
   Check,
-  Utensils,
-  Home,
-  Car,
-  Wifi,
-  GraduationCap,
-  HeartPulse,
-  User,
-  Sparkles,
-  Briefcase,
-  ShoppingBag,
-  Coins,
   Tag,
   CreditCard,
   Calendar,
 } from 'lucide-react';
-
-// Icon mapper for categories
-const iconMap: Record<string, any> = {
-  Utensils,
-  Home,
-  Car,
-  Wifi,
-  GraduationCap,
-  HeartPulse,
-  User,
-  Sparkles,
-  Briefcase,
-  ShoppingBag,
-  Coins,
-  Tag,
-};
 
 export function QuickTransactionModal() {
   const {
@@ -239,7 +213,7 @@ export function QuickTransactionModal() {
           <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
             {availableCategories.map((cat) => {
               const isSelected = selectedCategoryId === cat.id;
-              const IconComp = iconMap[cat.icon || 'Tag'] || Tag;
+              const IconComp = CATEGORY_ICON_MAP[cat.icon || 'Tag'] || Tag;
               return (
                 <button
                   key={cat.id}
