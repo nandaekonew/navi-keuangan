@@ -452,6 +452,17 @@ export const useNaviStore = create<NaviStoreState>()(
               receipt_url: newTx.receipt_url,
             },
           ]).then();
+
+          const updatedSource = updatedAccounts.find((a) => a.id === data.account_id);
+          if (updatedSource) {
+            supabase.from('accounts').update({ balance: updatedSource.balance }).eq('id', updatedSource.id).then();
+          }
+          if (data.type === 'transfer' && data.destination_account_id) {
+            const updatedDest = updatedAccounts.find((a) => a.id === data.destination_account_id);
+            if (updatedDest) {
+              supabase.from('accounts').update({ balance: updatedDest.balance }).eq('id', updatedDest.id).then();
+            }
+          }
         }
       },
 
@@ -487,6 +498,16 @@ export const useNaviStore = create<NaviStoreState>()(
         if (isSupabaseConfigured()) {
           const supabase = createClient();
           supabase.from('transactions').delete().eq('id', id).then();
+          const updatedSource = updatedAccounts.find((a) => a.id === tx.account_id);
+          if (updatedSource) {
+            supabase.from('accounts').update({ balance: updatedSource.balance }).eq('id', updatedSource.id).then();
+          }
+          if (tx.type === 'transfer' && tx.destination_account_id) {
+            const updatedDest = updatedAccounts.find((a) => a.id === tx.destination_account_id);
+            if (updatedDest) {
+              supabase.from('accounts').update({ balance: updatedDest.balance }).eq('id', updatedDest.id).then();
+            }
+          }
         }
       },
 
@@ -630,6 +651,29 @@ export const useNaviStore = create<NaviStoreState>()(
         if (!isSupabaseConfigured()) return;
         try {
           const supabase = createClient();
+          const state = get();
+
+          // 1. Cek apakah database Supabase masih kosong
+          const { data: existingHh } = await supabase
+            .from('households')
+            .select('id')
+            .limit(1);
+
+          if (!existingHh || existingHh.length === 0) {
+            // Inisialisasi awal ke Supabase agar perangkat lain bisa membaca data ini
+            await supabase.from('households').upsert([state.household]);
+            await supabase.from('users').upsert(state.members);
+            await supabase.from('accounts').upsert(state.accounts);
+            await supabase.from('categories').upsert(state.categories);
+            await supabase.from('budgets').upsert(state.budgets);
+            await supabase.from('recurring_bills').upsert(state.recurringBills);
+            await supabase.from('transactions').upsert(state.transactions);
+            return;
+          }
+
+          // 2. Ambil data terbaru dari cloud
+          const { data: households } = await supabase.from('households').select('*');
+          const { data: members } = await supabase.from('users').select('*');
           const { data: accounts } = await supabase.from('accounts').select('*');
           const { data: transactions } = await supabase
             .from('transactions')
@@ -639,11 +683,18 @@ export const useNaviStore = create<NaviStoreState>()(
           const { data: budgets } = await supabase.from('budgets').select('*');
           const { data: bills } = await supabase.from('recurring_bills').select('*');
 
+          if (households && households[0]) set({ household: households[0] });
+          if (members && members.length > 0) {
+            set((s) => ({
+              members,
+              currentUser: members.find((m) => m.id === s.currentUser.id) || members[0] || s.currentUser,
+            }));
+          }
           if (accounts && accounts.length > 0) set({ accounts });
-          if (transactions && transactions.length > 0) set({ transactions });
+          if (transactions) set({ transactions });
           if (categories && categories.length > 0) set({ categories });
-          if (budgets && budgets.length > 0) set({ budgets });
-          if (bills && bills.length > 0) set({ recurringBills: bills });
+          if (budgets) set({ budgets });
+          if (bills) set({ recurringBills: bills });
         } catch (e) {
           console.error('Error syncing with Supabase:', e);
         }

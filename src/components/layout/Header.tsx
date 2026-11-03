@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   User,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 
 export function Header() {
@@ -22,9 +23,17 @@ export function Header() {
     setQuickInputOpen,
     setTransferOpen,
     isSupabaseActive,
+    syncWithSupabase,
   } = useNaviStore();
 
   const [copied, setCopied] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await syncWithSupabase();
+    setTimeout(() => setIsSyncing(false), 800);
+  };
 
   const handleCopyCode = () => {
     if (household?.invite_code) {
@@ -94,6 +103,17 @@ export function Header() {
                 <span>+ Catat Cepat</span>
               </button>
             </div>
+
+            {/* Manual Sync Cloud Button */}
+            <button
+              onClick={handleManualSync}
+              title="Sinkronkan data dengan Cloud Supabase"
+              className="p-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${isSyncing ? 'animate-spin text-emerald-600' : 'text-slate-500'}`}
+              />
+            </button>
 
             {/* Persona Switcher (Suami 👨💼 / Istri 👩💼) */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">

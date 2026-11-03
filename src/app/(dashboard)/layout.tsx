@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { QuickTransactionModal } from '@/components/forms/QuickTransactionModal';
 import { TransferModal } from '@/components/forms/TransferModal';
+import { RealtimeSync } from '@/components/layout/RealtimeSync';
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+      <RealtimeSync />
       <Header />
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         <Sidebar />
