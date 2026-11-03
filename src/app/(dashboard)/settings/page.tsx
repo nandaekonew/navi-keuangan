@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Share2,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -26,6 +27,7 @@ export default function SettingsPage() {
     switchPersona,
     joinHouseholdByCode,
     updateMemberName,
+    deleteMember,
   } = useNaviStore();
 
   const [nameInput, setNameInput] = useState(household.name);
@@ -222,14 +224,30 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {!isCurrent && (
-                  <button
-                    onClick={() => switchPersona(member.persona)}
-                    className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition"
-                  >
-                    Ganti ke Profil Ini
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {!isCurrent && (
+                    <button
+                      onClick={() => switchPersona(member.persona)}
+                      className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition"
+                    >
+                      Ganti ke Profil Ini
+                    </button>
+                  )}
+
+                  {members.length > 1 && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Yakin ingin menghapus anggota "${member.full_name}" dari rumah tangga?`)) {
+                          deleteMember(member.id);
+                        }
+                      }}
+                      title="Hapus Anggota"
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

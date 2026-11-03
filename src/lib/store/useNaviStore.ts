@@ -263,6 +263,7 @@ interface NaviStoreState {
   setCurrentUser: (user: UserProfile) => void;
   setHouseholdName: (name: string) => void;
   updateMemberName: (id: string, newName: string) => void;
+  deleteMember: (id: string) => void;
   joinHouseholdByCode: (code: string, newMemberName: string, persona: UserPersona) => boolean;
 
   // CRUD Transaksi
@@ -351,6 +352,28 @@ export const useNaviStore = create<NaviStoreState>()(
         if (isSupabaseConfigured()) {
           const supabase = createClient();
           supabase.from('users').update({ full_name: trimmed }).eq('id', id).then();
+        }
+      },
+
+      deleteMember: (id: string) => {
+        const state = get();
+        if (state.members.length <= 1) {
+          alert('Tidak dapat menghapus. Rumah tangga minimal harus memiliki 1 anggota.');
+          return;
+        }
+
+        const remainingMembers = state.members.filter((m) => m.id !== id);
+        const newCurrentUser =
+          state.currentUser.id === id ? remainingMembers[0] : state.currentUser;
+
+        set({
+          members: remainingMembers,
+          currentUser: newCurrentUser,
+        });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('users').delete().eq('id', id).then();
         }
       },
 
