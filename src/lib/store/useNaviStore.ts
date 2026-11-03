@@ -1,0 +1,619 @@
+'use client';
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import {
+  Account,
+  Budget,
+  Category,
+  Household,
+  RecurringBill,
+  Transaction,
+  UserProfile,
+  UserPersona,
+} from '@/types';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+
+// Initial realistic default data for Keluarga Nanda
+const initialHousehold: Household = {
+  id: 'hh-navi-001',
+  name: 'Rumah Tangga Nanda & Dina',
+  invite_code: 'NAVI-7821',
+  created_at: new Date().toISOString(),
+};
+
+const initialMembers: UserProfile[] = [
+  {
+    id: 'user-suami-01',
+    household_id: 'hh-navi-001',
+    full_name: 'Nanda (Suami)',
+    role: 'admin',
+    persona: 'suami',
+    avatar_url: '',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'user-istri-02',
+    household_id: 'hh-navi-001',
+    full_name: 'Dina (Istri)',
+    role: 'member',
+    persona: 'istri',
+    avatar_url: '',
+    created_at: new Date().toISOString(),
+  },
+];
+
+const initialAccounts: Account[] = [
+  {
+    id: 'acc-1',
+    household_id: 'hh-navi-001',
+    name: 'BCA Rekening Utama (Gaji)',
+    type: 'bank',
+    account_number: '8820194821',
+    balance: 18500000,
+    color: '#2563eb',
+  },
+  {
+    id: 'acc-2',
+    household_id: 'hh-navi-001',
+    name: 'Mandiri Operasional',
+    type: 'bank',
+    account_number: '13700192831',
+    balance: 4250000,
+    color: '#0284c7',
+  },
+  {
+    id: 'acc-3',
+    household_id: 'hh-navi-001',
+    name: 'GoPay & OVO',
+    type: 'ewallet',
+    account_number: '081298765432',
+    balance: 750000,
+    color: '#059669',
+  },
+  {
+    id: 'acc-4',
+    household_id: 'hh-navi-001',
+    name: 'Dompet Kas Tunai',
+    type: 'cash',
+    balance: 600000,
+    color: '#d97706',
+  },
+  {
+    id: 'acc-5',
+    household_id: 'hh-navi-001',
+    name: 'Pos Dana Darurat (Deposito)',
+    type: 'savings',
+    balance: 35000000,
+    color: '#7c3aed',
+  },
+  {
+    id: 'acc-6',
+    household_id: 'hh-navi-001',
+    name: 'Pos Tabungan & Sekolah Anak',
+    type: 'investment',
+    balance: 15000000,
+    color: '#db2777',
+  },
+];
+
+const initialCategories: Category[] = [
+  // Pengeluaran
+  { id: 'cat-exp-1', household_id: 'hh-navi-001', name: 'Belanja Dapur & Makan', type: 'expense', icon: 'Utensils', color: '#f97316', is_budgeted: true },
+  { id: 'cat-exp-2', household_id: 'hh-navi-001', name: 'Operasional Rumah & Utilitas', type: 'expense', icon: 'Home', color: '#06b6d4', is_budgeted: true },
+  { id: 'cat-exp-3', household_id: 'hh-navi-001', name: 'Transportasi & Bensin', type: 'expense', icon: 'Car', color: '#3b82f6', is_budgeted: true },
+  { id: 'cat-exp-4', household_id: 'hh-navi-001', name: 'Tagihan Rutin & Internet', type: 'expense', icon: 'Wifi', color: '#6366f1', is_budgeted: true },
+  { id: 'cat-exp-5', household_id: 'hh-navi-001', name: 'Pendidikan & Kursus Anak', type: 'expense', icon: 'GraduationCap', color: '#ec4899', is_budgeted: true },
+  { id: 'cat-exp-6', household_id: 'hh-navi-001', name: 'Kesehatan & Obat', type: 'expense', icon: 'HeartPulse', color: '#ef4444', is_budgeted: true },
+  { id: 'cat-exp-7', household_id: 'hh-navi-001', name: 'Kebutuhan Pribadi Suami', type: 'expense', icon: 'User', color: '#2563eb', is_budgeted: true },
+  { id: 'cat-exp-8', household_id: 'hh-navi-001', name: 'Kebutuhan Pribadi Istri', type: 'expense', icon: 'Sparkles', color: '#d946ef', is_budgeted: true },
+  { id: 'cat-exp-9', household_id: 'hh-navi-001', name: 'Sedekah & Zakat', type: 'expense', icon: 'HandHeart', color: '#10b981', is_budgeted: false },
+  // Pemasukan
+  { id: 'cat-inc-1', household_id: 'hh-navi-001', name: 'Gaji Pokok Suami', type: 'income', icon: 'Briefcase', color: '#10b981', is_budgeted: false },
+  { id: 'cat-inc-2', household_id: 'hh-navi-001', name: 'Penghasilan / Bisnis Istri', type: 'income', icon: 'ShoppingBag', color: '#84cc16', is_budgeted: false },
+  { id: 'cat-inc-3', household_id: 'hh-navi-001', name: 'Bonus & Insentif', type: 'income', icon: 'Coins', color: '#eab308', is_budgeted: false },
+];
+
+const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
+
+const initialBudgets: Budget[] = [
+  { id: 'b-1', household_id: 'hh-navi-001', category_id: 'cat-exp-1', target_amount: 4500000, month: currentMonth, year: currentYear },
+  { id: 'b-2', household_id: 'hh-navi-001', category_id: 'cat-exp-2', target_amount: 1800000, month: currentMonth, year: currentYear },
+  { id: 'b-3', household_id: 'hh-navi-001', category_id: 'cat-exp-3', target_amount: 1500000, month: currentMonth, year: currentYear },
+  { id: 'b-4', household_id: 'hh-navi-001', category_id: 'cat-exp-4', target_amount: 1200000, month: currentMonth, year: currentYear },
+  { id: 'b-5', household_id: 'hh-navi-001', category_id: 'cat-exp-5', target_amount: 2500000, month: currentMonth, year: currentYear },
+  { id: 'b-6', household_id: 'hh-navi-001', category_id: 'cat-exp-7', target_amount: 1000000, month: currentMonth, year: currentYear },
+  { id: 'b-7', household_id: 'hh-navi-001', category_id: 'cat-exp-8', target_amount: 1000000, month: currentMonth, year: currentYear },
+];
+
+const todayISO = new Date().toISOString().split('T')[0];
+
+const initialTransactions: Transaction[] = [
+  {
+    id: 'tx-1',
+    household_id: 'hh-navi-001',
+    account_id: 'acc-1',
+    category_id: 'cat-inc-1',
+    user_id: 'user-suami-01',
+    type: 'income',
+    amount: 18000000,
+    transaction_date: todayISO,
+    description: 'Transfer Gaji Bulanan Nanda',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'tx-2',
+    household_id: 'hh-navi-001',
+    account_id: 'acc-2',
+    category_id: 'cat-inc-2',
+    user_id: 'user-istri-02',
+    type: 'income',
+    amount: 5500000,
+    transaction_date: todayISO,
+    description: 'Hasil Penjualan Toko Online Dina',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'tx-3',
+    household_id: 'hh-navi-001',
+    account_id: 'acc-1',
+    category_id: 'cat-exp-1',
+    user_id: 'user-istri-02',
+    type: 'expense',
+    amount: 650000,
+    transaction_date: todayISO,
+    description: 'Belanja Sayur, Daging & Buah Mingguan (Superindo)',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'tx-4',
+    household_id: 'hh-navi-001',
+    account_id: 'acc-3',
+    category_id: 'cat-exp-3',
+    user_id: 'user-suami-01',
+    type: 'expense',
+    amount: 200000,
+    transaction_date: todayISO,
+    description: 'Isi Bensin Pertamax Mobil',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'tx-5',
+    household_id: 'hh-navi-001',
+    account_id: 'acc-1',
+    destination_account_id: 'acc-5',
+    category_id: null,
+    user_id: 'user-suami-01',
+    type: 'transfer',
+    amount: 2500000,
+    transaction_date: todayISO,
+    description: 'Alokasi Bulanan ke Dana Darurat',
+    created_at: new Date().toISOString(),
+  },
+];
+
+const initialBills: RecurringBill[] = [
+  {
+    id: 'bill-1',
+    household_id: 'hh-navi-001',
+    name: 'Listrik PLN Pasca/Token',
+    category_id: 'cat-exp-2',
+    preferred_account_id: 'acc-1',
+    amount: 650000,
+    due_day: 10,
+    is_paid: false,
+    notes: 'ID Pelanggan: 51293847291',
+  },
+  {
+    id: 'bill-2',
+    household_id: 'hh-navi-001',
+    name: 'Internet & WiFi Biznet',
+    category_id: 'cat-exp-4',
+    preferred_account_id: 'acc-2',
+    amount: 375000,
+    due_day: 15,
+    is_paid: false,
+    notes: 'Kecepatan 100 Mbps',
+  },
+  {
+    id: 'bill-3',
+    household_id: 'hh-navi-001',
+    name: 'BPJS Kesehatan Keluarga',
+    category_id: 'cat-exp-6',
+    preferred_account_id: 'acc-1',
+    amount: 300000,
+    due_day: 10,
+    is_paid: true,
+    last_paid_at: new Date().toISOString(),
+    notes: 'Kelas 1 (3 Jiwa)',
+  },
+  {
+    id: 'bill-4',
+    household_id: 'hh-navi-001',
+    name: 'SPP Sekolah Anak',
+    category_id: 'cat-exp-5',
+    preferred_account_id: 'acc-1',
+    amount: 1250000,
+    due_day: 5,
+    is_paid: false,
+    notes: 'Bulan berjalan',
+  },
+];
+
+interface NaviStoreState {
+  household: Household;
+  currentUser: UserProfile;
+  members: UserProfile[];
+  accounts: Account[];
+  categories: Category[];
+  transactions: Transaction[];
+  budgets: Budget[];
+  recurringBills: RecurringBill[];
+  
+  // UI States
+  isQuickInputOpen: boolean;
+  isTransferOpen: boolean;
+  isSupabaseActive: boolean;
+
+  // Actions
+  setQuickInputOpen: (open: boolean) => void;
+  setTransferOpen: (open: boolean) => void;
+  switchPersona: (persona: UserPersona) => void;
+  setCurrentUser: (user: UserProfile) => void;
+  setHouseholdName: (name: string) => void;
+  joinHouseholdByCode: (code: string, newMemberName: string, persona: UserPersona) => boolean;
+
+  // CRUD Transaksi
+  addTransaction: (data: Omit<Transaction, 'id' | 'created_at'>) => void;
+  deleteTransaction: (id: string) => void;
+
+  // CRUD Akun
+  addAccount: (account: Omit<Account, 'id' | 'created_at'>) => void;
+  updateAccount: (id: string, data: Partial<Account>) => void;
+  deleteAccount: (id: string) => void;
+  transferFunds: (sourceAccountId: string, targetAccountId: string, amount: number, notes?: string) => void;
+
+  // CRUD Budgets
+  setBudget: (categoryId: string, targetAmount: number, month?: number, year?: number) => void;
+
+  // Tagihan Rutin
+  addRecurringBill: (bill: Omit<RecurringBill, 'id' | 'created_at'>) => void;
+  payRecurringBill: (billId: string, accountId?: string) => void;
+  toggleBillPaidStatus: (billId: string) => void;
+  deleteRecurringBill: (billId: string) => void;
+
+  // Sync with Supabase
+  syncWithSupabase: () => Promise<void>;
+}
+
+export const useNaviStore = create<NaviStoreState>()(
+  persist(
+    (set, get) => ({
+      household: initialHousehold,
+      currentUser: initialMembers[0], // Nanda (Suami)
+      members: initialMembers,
+      accounts: initialAccounts,
+      categories: initialCategories,
+      transactions: initialTransactions,
+      budgets: initialBudgets,
+      recurringBills: initialBills,
+      isQuickInputOpen: false,
+      isTransferOpen: false,
+      isSupabaseActive: isSupabaseConfigured(),
+
+      setQuickInputOpen: (open) => set({ isQuickInputOpen: open }),
+      setTransferOpen: (open) => set({ isTransferOpen: open }),
+
+      switchPersona: (persona: UserPersona) => {
+        const { members, currentUser } = get();
+        const existing = members.find((m) => m.persona === persona);
+        if (existing) {
+          set({ currentUser: existing });
+        } else {
+          // Buat user persona baru jika belum ada
+          const newUser: UserProfile = {
+            id: `user-${persona}-${Date.now().toString().slice(-4)}`,
+            household_id: get().household.id,
+            full_name: persona === 'istri' ? 'Istri' : persona === 'suami' ? 'Suami' : 'Anggota',
+            role: 'member',
+            persona,
+            created_at: new Date().toISOString(),
+          };
+          set({
+            members: [...members, newUser],
+            currentUser: newUser,
+          });
+        }
+      },
+
+      setCurrentUser: (user) => set({ currentUser: user }),
+      setHouseholdName: (name) => set((s) => ({ household: { ...s.household, name } })),
+
+      joinHouseholdByCode: (code, newMemberName, persona) => {
+        const cleanCode = code.trim().toUpperCase();
+        // Sederhana: jika kode cocok atau valid format
+        if (cleanCode.length >= 4) {
+          const newUserId = `user-${persona}-${Date.now().toString().slice(-4)}`;
+          const newProfile: UserProfile = {
+            id: newUserId,
+            household_id: get().household.id,
+            full_name: newMemberName || (persona === 'istri' ? 'Istri' : 'Suami'),
+            role: 'member',
+            persona,
+            created_at: new Date().toISOString(),
+          };
+          set((state) => ({
+            members: [...state.members.filter((m) => m.id !== newUserId), newProfile],
+            currentUser: newProfile,
+          }));
+          return true;
+        }
+        return false;
+      },
+
+      addTransaction: (data) => {
+        const state = get();
+        const txId = `tx-${Date.now()}`;
+        const newTx: Transaction = {
+          ...data,
+          id: txId,
+          household_id: state.household.id,
+          user_id: state.currentUser.id,
+          created_at: new Date().toISOString(),
+        };
+
+        // Update saldo akun terkait secara atomik
+        const updatedAccounts = state.accounts.map((acc) => {
+          if (data.type === 'income' && acc.id === data.account_id) {
+            return { ...acc, balance: acc.balance + data.amount };
+          }
+          if (data.type === 'expense' && acc.id === data.account_id) {
+            return { ...acc, balance: acc.balance - data.amount };
+          }
+          if (data.type === 'transfer') {
+            if (acc.id === data.account_id) {
+              return { ...acc, balance: acc.balance - data.amount };
+            }
+            if (acc.id === data.destination_account_id) {
+              return { ...acc, balance: acc.balance + data.amount };
+            }
+          }
+          return acc;
+        });
+
+        set({
+          transactions: [newTx, ...state.transactions],
+          accounts: updatedAccounts,
+        });
+
+        // Sync ke Supabase jika aktif
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('transactions').insert([
+            {
+              id: newTx.id,
+              household_id: newTx.household_id,
+              account_id: newTx.account_id,
+              destination_account_id: newTx.destination_account_id,
+              category_id: newTx.category_id,
+              user_id: newTx.user_id,
+              type: newTx.type,
+              amount: newTx.amount,
+              transaction_date: newTx.transaction_date,
+              description: newTx.description,
+              receipt_url: newTx.receipt_url,
+            },
+          ]).then();
+        }
+      },
+
+      deleteTransaction: (id) => {
+        const state = get();
+        const tx = state.transactions.find((t) => t.id === id);
+        if (!tx) return;
+
+        // Rollback saldo akun
+        const updatedAccounts = state.accounts.map((acc) => {
+          if (tx.type === 'income' && acc.id === tx.account_id) {
+            return { ...acc, balance: acc.balance - tx.amount };
+          }
+          if (tx.type === 'expense' && acc.id === tx.account_id) {
+            return { ...acc, balance: acc.balance + tx.amount };
+          }
+          if (tx.type === 'transfer') {
+            if (acc.id === tx.account_id) {
+              return { ...acc, balance: acc.balance + tx.amount };
+            }
+            if (acc.id === tx.destination_account_id) {
+              return { ...acc, balance: acc.balance - tx.amount };
+            }
+          }
+          return acc;
+        });
+
+        set({
+          transactions: state.transactions.filter((t) => t.id !== id),
+          accounts: updatedAccounts,
+        });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('transactions').delete().eq('id', id).then();
+        }
+      },
+
+      addAccount: (accountData) => {
+        const newAcc: Account = {
+          ...accountData,
+          id: `acc-${Date.now()}`,
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({ accounts: [...s.accounts, newAcc] }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('accounts').insert([newAcc]).then();
+        }
+      },
+
+      updateAccount: (id, data) => {
+        set((s) => ({
+          accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...data } : a)),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('accounts').update(data).eq('id', id).then();
+        }
+      },
+
+      deleteAccount: (id) => {
+        set((s) => ({
+          accounts: s.accounts.filter((a) => a.id !== id),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase.from('accounts').delete().eq('id', id).then();
+        }
+      },
+
+      transferFunds: (sourceAccountId, targetAccountId, amount, notes) => {
+        const state = get();
+        const sourceAcc = state.accounts.find((a) => a.id === sourceAccountId);
+        const targetAcc = state.accounts.find((a) => a.id === targetAccountId);
+        if (!sourceAcc || !targetAcc || amount <= 0) return;
+
+        state.addTransaction({
+          household_id: state.household.id,
+          account_id: sourceAccountId,
+          destination_account_id: targetAccountId,
+          category_id: null,
+          user_id: state.currentUser.id,
+          type: 'transfer',
+          amount,
+          transaction_date: new Date().toISOString().split('T')[0],
+          description: notes || `Transfer dari ${sourceAcc.name} ke ${targetAcc.name}`,
+        });
+      },
+
+      setBudget: (categoryId, targetAmount, month = currentMonth, year = currentYear) => {
+        set((state) => {
+          const existingIndex = state.budgets.findIndex(
+            (b) => b.category_id === categoryId && b.month === month && b.year === year
+          );
+
+          if (existingIndex >= 0) {
+            const updated = [...state.budgets];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              target_amount: targetAmount,
+            };
+            return { budgets: updated };
+          } else {
+            const newBudget: Budget = {
+              id: `b-${Date.now()}`,
+              household_id: state.household.id,
+              category_id: categoryId,
+              target_amount: targetAmount,
+              month,
+              year,
+            };
+            return { budgets: [...state.budgets, newBudget] };
+          }
+        });
+      },
+
+      addRecurringBill: (billData) => {
+        const newBill: RecurringBill = {
+          ...billData,
+          id: `bill-${Date.now()}`,
+          is_paid: false,
+          created_at: new Date().toISOString(),
+        };
+        set((s) => ({ recurringBills: [...s.recurringBills, newBill] }));
+      },
+
+      payRecurringBill: (billId, accountId) => {
+        const state = get();
+        const bill = state.recurringBills.find((b) => b.id === billId);
+        if (!bill) return;
+
+        const payingAccountId = accountId || bill.preferred_account_id || state.accounts[0]?.id;
+        if (!payingAccountId) return;
+
+        // Buat transaksi pengeluaran otomatis
+        state.addTransaction({
+          household_id: state.household.id,
+          account_id: payingAccountId,
+          category_id: bill.category_id || null,
+          user_id: state.currentUser.id,
+          type: 'expense',
+          amount: bill.amount,
+          transaction_date: new Date().toISOString().split('T')[0],
+          description: `Pembayaran Tagihan Rutin: ${bill.name}`,
+        });
+
+        // Tandai sudah dibayar
+        set({
+          recurringBills: state.recurringBills.map((b) =>
+            b.id === billId
+              ? { ...b, is_paid: true, last_paid_at: new Date().toISOString() }
+              : b
+          ),
+        });
+      },
+
+      toggleBillPaidStatus: (billId) => {
+        set((state) => ({
+          recurringBills: state.recurringBills.map((b) =>
+            b.id === billId ? { ...b, is_paid: !b.is_paid } : b
+          ),
+        }));
+      },
+
+      deleteRecurringBill: (billId) => {
+        set((s) => ({
+          recurringBills: s.recurringBills.filter((b) => b.id !== billId),
+        }));
+      },
+
+      syncWithSupabase: async () => {
+        if (!isSupabaseConfigured()) return;
+        try {
+          const supabase = createClient();
+          const { data: accounts } = await supabase.from('accounts').select('*');
+          const { data: transactions } = await supabase
+            .from('transactions')
+            .select('*')
+            .order('transaction_date', { ascending: false });
+          const { data: categories } = await supabase.from('categories').select('*');
+          const { data: budgets } = await supabase.from('budgets').select('*');
+          const { data: bills } = await supabase.from('recurring_bills').select('*');
+
+          if (accounts && accounts.length > 0) set({ accounts });
+          if (transactions && transactions.length > 0) set({ transactions });
+          if (categories && categories.length > 0) set({ categories });
+          if (budgets && budgets.length > 0) set({ budgets });
+          if (bills && bills.length > 0) set({ recurringBills: bills });
+        } catch (e) {
+          console.error('Error syncing with Supabase:', e);
+        }
+      },
+    }),
+    {
+      name: 'navi-keuangan-storage',
+      partialize: (state) => ({
+        household: state.household,
+        currentUser: state.currentUser,
+        members: state.members,
+        accounts: state.accounts,
+        categories: state.categories,
+        transactions: state.transactions,
+        budgets: state.budgets,
+        recurringBills: state.recurringBills,
+      }),
+    }
+  )
+);

@@ -1,0 +1,32 @@
+-- ==========================================================
+-- SEED DATA & TEMPLATES UNTUK APLIKASI KEUANGAN NAVI
+-- Kategori Standar Rumah Tangga Indonesia
+-- ==========================================================
+
+-- Template Kategori yang otomatis dibuat ketika Rumah Tangga baru didaftarkan
+-- Contoh kategori Pengeluaran (Expense):
+-- 1. Belanja Dapur & Makanan (Groceries & Food)
+-- 2. Operasional Rumah & Utilitas (Listrik, Air, Gas)
+-- 3. Transportasi & Bensin (Transport & Fuel)
+-- 4. Tagihan & Komunikasi (Internet, Pulsa, Langganan)
+-- 5. Pendidikan & Kursus Anak
+-- 6. Kesehatan & Asuransi (Obat, BPJS, Vitamin)
+-- 7. Kebutuhan Pribadi Suami
+-- 8. Kebutuhan Pribadi Istri
+-- 9. Sedekah & Sosial (Infaq, Zakat, Kondangan)
+-- 10. Hiburan & Liburan Keluarga
+
+-- Contoh kategori Pemasukan (Income):
+-- 1. Gaji Suami
+-- 2. Gaji / Usaha Istri
+-- 3. Bonus & THR
+-- 4. Investasi & Dividen
+-- 5. Pemasukan Lain-lain
+
+-- Contoh Rekening Standar:
+-- 1. BCA Rekening Utama (Gaji)
+-- 2. Mandiri Operasional
+-- 3. GoPay / Ovo / ShopeePay (E-Wallet)
+-- 4. Kas Tunai Dompet
+-- 5. Pos Dana Darurat (Deposito / Bank Digital)
+-- 6. Pos Tabungan Pendidikan Anak
