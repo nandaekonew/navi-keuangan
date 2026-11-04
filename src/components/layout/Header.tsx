@@ -10,6 +10,7 @@ import {
   Plus,
   ArrowLeftRight,
   RefreshCw,
+  User,
 } from 'lucide-react';
 
 export function Header() {
@@ -118,32 +119,32 @@ export function Header() {
               />
             </button>
 
-            {/* Persona Switcher (Suami 👨💼 / Istri 👩💼) */}
+            {/* Persona Switcher (Suami / Istri) */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => switchPersona('suami')}
                 aria-label="Ganti ke persona Suami"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition-all ${
                   isSuami
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <span>👨💼</span>
+                <User className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Suami</span>
               </button>
               <button
                 type="button"
                 onClick={() => switchPersona('istri')}
                 aria-label="Ganti ke persona Istri"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition-all ${
                   !isSuami
                     ? 'bg-pink-600 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <span>👩💼</span>
+                <User className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Istri</span>
               </button>
             </div>

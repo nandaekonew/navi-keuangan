@@ -16,6 +16,8 @@ import {
   Share2,
   Pencil,
   Trash2,
+  User,
+  UserCheck,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -146,25 +148,49 @@ export default function SettingsPage() {
 
       {/* Member List */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-          Daftar Anggota Rumah Tangga ({members.length})
-        </h2>
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+              Daftar Anggota Rumah Tangga ({members.length})
+            </h2>
+            <p className="text-[11px] text-slate-500">
+              Anggota keluarga yang terhubung dalam workspace ini
+            </p>
+          </div>
+        </div>
 
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {members.map((member) => {
             const isCurrent = member.id === currentUser.id;
             const isSuami = member.persona === 'suami';
+            const initials = member.full_name
+              ? member.full_name
+                  .trim()
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()
+              : isSuami ? 'S' : 'I';
+
             return (
-              <div key={member.id} className="py-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+              <div key={member.id} className="py-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-9 h-9 rounded-2xl flex items-center justify-center text-lg ${
-                      isSuami ? 'bg-blue-100 dark:bg-blue-950' : 'bg-pink-100 dark:bg-pink-950'
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shrink-0 border select-none transition-all ${
+                      isSuami
+                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60'
+                        : 'bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 border-pink-200/80 dark:border-pink-900/60'
                     }`}
                   >
-                    {isSuami ? '👨💼' : '👩💼'}
+                    <span className="tracking-wider">{initials}</span>
                   </div>
-                  <div>
+
+                  <div className="min-w-0">
                     {editingMemberId === member.id ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <input
@@ -196,7 +222,7 @@ export default function SettingsPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-slate-900 dark:text-white">
                           {member.full_name}
                         </span>
@@ -206,43 +232,54 @@ export default function SettingsPage() {
                             setEditingMemberId(member.id);
                             setEditingNameValue(member.full_name);
                           }}
-                          title="Klik untuk ubah nama"
-                          className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                          title="Ubah Nama"
+                          aria-label="Ubah nama anggota"
+                          className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         {isCurrent && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Sedang Aktif di HP ini
                           </span>
                         )}
                       </div>
                     )}
-                    <span className="text-[10px] text-slate-500 capitalize">
-                      Peran: {member.persona} • Akses: {member.role}
-                    </span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+                      <span className={`font-semibold ${isSuami ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                        Peran: {isSuami ? 'Suami' : 'Istri'}
+                      </span>
+                      <span>•</span>
+                      <span>Akses: {member.role === 'admin' ? 'Admin' : 'Member'}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 shrink-0">
                   {!isCurrent && (
                     <button
+                      type="button"
                       onClick={() => switchPersona(member.persona)}
-                      className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition shadow-xs"
                     >
-                      Ganti ke Profil Ini
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Ganti ke Profil Ini</span>
+                      <span className="sm:hidden">Ganti Profil</span>
                     </button>
                   )}
 
                   {members.length > 1 && (
                     <button
+                      type="button"
                       onClick={() => {
                         if (confirm(`Yakin ingin menghapus anggota "${member.full_name}" dari rumah tangga?`)) {
                           deleteMember(member.id);
                         }
                       }}
                       title="Hapus Anggota"
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition"
+                      aria-label="Hapus anggota"
+                      className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -309,10 +346,10 @@ export default function SettingsPage() {
               <select
                 value={joinPersona}
                 onChange={(e) => setJoinPersona(e.target.value as UserPersona)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
               >
-                <option value="istri">Istri 👩💼</option>
-                <option value="suami">Suami 👨💼</option>
+                <option value="istri">Istri</option>
+                <option value="suami">Suami</option>
               </select>
             </div>
           </div>

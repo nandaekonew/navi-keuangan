@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { UserPersona } from '@/types';
-import { Wallet, ArrowRight, Smartphone } from 'lucide-react';
+import { Wallet, ArrowRight, Home, Link2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,24 +57,26 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={() => setMode('create')}
-            className={`py-2 text-xs font-bold rounded-xl transition ${
+            className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-xl transition ${
               mode === 'create'
                 ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500'
             }`}
           >
-            🏠 Rumah Tangga Baru
+            <Home className="w-3.5 h-3.5" />
+            <span>Rumah Tangga Baru</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('join')}
-            className={`py-2 text-xs font-bold rounded-xl transition ${
+            className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-xl transition ${
               mode === 'join'
                 ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500'
             }`}
           >
-            🔗 Gabung HP Pasangan
+            <Link2 className="w-3.5 h-3.5" />
+            <span>Gabung HP Pasangan</span>
           </button>
         </div>
 
@@ -135,8 +137,8 @@ export default function RegisterPage() {
                 onChange={(e) => setPersona(e.target.value as UserPersona)}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="suami">Suami 👨💼</option>
-                <option value="istri">Istri 👩💼</option>
+                <option value="suami">Suami</option>
+                <option value="istri">Istri</option>
               </select>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { UserPersona } from '@/types';
-import { Wallet, ArrowRight, ShieldCheck, Heart } from 'lucide-react';
+import { Wallet, ArrowRight, User } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,14 +52,16 @@ export default function LoginPage() {
               onClick={() => handleQuickDemo('suami')}
               className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm"
             >
-              <span>👨💼 Masuk sbg Suami</span>
+              <User className="w-3.5 h-3.5" />
+              <span>Masuk sbg Suami</span>
             </button>
             <button
               type="button"
               onClick={() => handleQuickDemo('istri')}
               className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold transition shadow-sm"
             >
-              <span>👩💼 Masuk sbg Istri</span>
+              <User className="w-3.5 h-3.5" />
+              <span>Masuk sbg Istri</span>
             </button>
           </div>
         </div>
@@ -74,20 +76,22 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setPersona('suami')}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition ${
                   persona === 'suami' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500'
                 }`}
               >
-                👨 Suami
+                <User className="w-3.5 h-3.5" />
+                <span>Suami</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPersona('istri')}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition ${
                   persona === 'istri' ? 'bg-pink-600 text-white shadow-sm' : 'text-slate-500'
                 }`}
               >
-                👩 Istri
+                <User className="w-3.5 h-3.5" />
+                <span>Istri</span>
               </button>
             </div>
           </div>
