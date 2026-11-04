@@ -5,7 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { Transaction, TransactionType } from '@/types';
 import { formatRupiah, parseRupiahInput } from '@/lib/utils';
-import { CATEGORY_ICON_MAP } from '@/lib/categoryIcons';
+import { resolveCategoryIcon } from '@/lib/categoryIcons';
 import {
   Camera,
   X,
@@ -291,7 +291,7 @@ export function EditTransactionModal({
             <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
               {availableCategories.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
-                const IconComp = CATEGORY_ICON_MAP[cat.icon || 'Tag'] || Tag;
+                const IconComp = resolveCategoryIcon(cat.icon, cat.name);
                 return (
                   <button
                     key={cat.id}

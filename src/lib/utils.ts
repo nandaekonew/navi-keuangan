@@ -59,12 +59,12 @@ export function generateInviteCode(): string {
 export function getBudgetProgressInfo(spent: number, target: number) {
   if (target <= 0) {
     return {
-      percentage: spent > 0 ? 100 : 0,
-      status: spent > 0 ? 'overbudget' : 'safe',
-      color: 'bg-red-500',
-      badgeColor: 'bg-red-100 text-red-700 border-red-200',
-      textColor: 'text-red-600',
-      label: 'Overbudget',
+      percentage: 0,
+      status: 'unlimited',
+      color: 'bg-slate-200 dark:bg-slate-700',
+      badgeColor: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+      textColor: 'text-slate-600 dark:text-slate-400',
+      label: 'Tanpa Limit',
     };
   }
 

@@ -97,7 +97,7 @@ export function BudgetProgressList() {
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${progress.badgeColor}`}
                 >
-                  {progress.percentage}% • {progress.label}
+                  {target > 0 ? `${progress.percentage}% • ${progress.label}` : 'Tanpa Limit'}
                 </span>
               </div>
 
@@ -105,13 +105,13 @@ export function BudgetProgressList() {
               <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mb-1.5">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${progress.color}`}
-                  style={{ width: `${Math.min(progress.percentage, 100)}%` }}
+                  style={{ width: target > 0 ? `${Math.min(progress.percentage, 100)}%` : '0%' }}
                 />
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                 <span>Terpakai: {formatRupiah(spent)}</span>
-                <span>Limit: {formatRupiah(target)}</span>
+                <span>Limit: {target > 0 ? formatRupiah(target) : 'Bebas'}</span>
               </div>
             </div>
           ))}

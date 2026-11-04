@@ -9,6 +9,7 @@ import {
   CATEGORY_ICONS,
   CATEGORY_COLORS,
   CATEGORY_ICON_MAP,
+  resolveCategoryIcon,
 } from '@/lib/categoryIcons';
 import { Tag } from 'lucide-react';
 
@@ -98,7 +99,7 @@ export function CategoryModal({
     onClose();
   };
 
-  const SelectedIconComp = CATEGORY_ICON_MAP[icon] || Tag;
+  const SelectedIconComp = CATEGORY_ICON_MAP[icon] || resolveCategoryIcon(icon, name);
 
   return (
     <Modal
