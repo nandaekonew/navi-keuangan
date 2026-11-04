@@ -81,7 +81,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Household Profile & Share Code */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
             <Users className="w-5 h-5" />
@@ -145,7 +145,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Member List */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <h2 className="text-sm font-bold text-slate-900 dark:text-white">
           Daftar Anggota Rumah Tangga ({members.length})
         </h2>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Join Another Household Form */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600">
             <Smartphone className="w-5 h-5" />
@@ -327,7 +327,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Supabase Status & Instructions */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
             <Database className="w-5 h-5" />

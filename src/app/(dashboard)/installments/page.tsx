@@ -23,7 +23,6 @@ import {
   Copy,
   Check,
   Building2,
-  Sparkles,
   Archive,
   Layers,
   Code2,
@@ -99,11 +98,12 @@ export default function InstallmentsPage() {
         </div>
 
         <button
+          type="button"
           onClick={() => {
             setInstallmentToEdit(null);
             setIsModalOpen(true);
           }}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>+ Tambah Cicilan</span>
@@ -112,7 +112,7 @@ export default function InstallmentsPage() {
 
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
             <span>Total Sisa Hutang Keluarga</span>
             <AlertCircle className="w-4 h-4 text-amber-500" />
@@ -125,7 +125,7 @@ export default function InstallmentsPage() {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
             <span>Beban Bulan Ini (Belum Bayar)</span>
             <Clock className="w-4 h-4 text-rose-500" />
@@ -138,7 +138,7 @@ export default function InstallmentsPage() {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
             <span>Akumulasi Terbayar</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -155,11 +155,12 @@ export default function InstallmentsPage() {
       {/* Tabs Filter */}
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
+          type="button"
           onClick={() => setActiveTab('active')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
             activeTab === 'active'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <CreditCard className="w-3.5 h-3.5" />
@@ -167,11 +168,12 @@ export default function InstallmentsPage() {
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('paid_off')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
             activeTab === 'paid_off'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Archive className="w-3.5 h-3.5" />
@@ -179,11 +181,12 @@ export default function InstallmentsPage() {
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('all')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
             activeTab === 'all'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -194,7 +197,7 @@ export default function InstallmentsPage() {
       {/* Installment List Cards */}
       <div className="space-y-4">
         {displayedList.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 space-y-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 space-y-2">
             <p>
               {activeTab === 'active'
                 ? 'Tidak ada cicilan aktif saat ini. Semua cicilan lunas atau belum ditambahkan.'
@@ -203,11 +206,12 @@ export default function InstallmentsPage() {
                 : 'Belum ada data cicilan yang terdaftar.'}
             </p>
             <button
+              type="button"
               onClick={() => {
                 setInstallmentToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="text-emerald-600 font-bold hover:underline"
+              className="text-emerald-600 font-bold hover:underline focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none rounded"
             >
               + Tambah Cicilan Baru
             </button>
@@ -220,7 +224,7 @@ export default function InstallmentsPage() {
             return (
               <div
                 key={item.id}
-                className={`p-5 rounded-3xl border transition-all ${
+                className={`p-5 rounded-2xl border transition-all ${
                   isLunas
                     ? 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-85'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
@@ -288,11 +292,13 @@ export default function InstallmentsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 self-end sm:self-center">
+                  <div className="flex items-center gap-1 sm:gap-1.5 self-end sm:self-center">
                     <button
+                      type="button"
                       onClick={() => handleCopySummary(item)}
                       title="Salin Ringkasan Terstruktur"
-                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition text-xs flex items-center gap-1"
+                      aria-label="Salin ringkasan terstruktur"
+                      className="min-w-[44px] min-h-[44px] px-2.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition text-xs flex items-center justify-center gap-1 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
                     >
                       {copiedId === item.id ? (
                         <>
@@ -308,32 +314,38 @@ export default function InstallmentsPage() {
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => setJsonViewItem(item)}
                       title="Lihat Format JSON"
-                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                      aria-label="Lihat format JSON"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                     >
                       <Code2 className="w-4 h-4" />
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => {
                         setInstallmentToEdit(item);
                         setIsModalOpen(true);
                       }}
                       title="Ubah Cicilan"
-                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                      aria-label="Ubah cicilan"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => {
                         if (confirm(`Hapus data cicilan "${item.nama_cicilan}"?`)) {
                           deleteInstallment(item.id);
                         }
                       }}
                       title="Hapus Cicilan"
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
+                      aria-label="Hapus cicilan"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -341,7 +353,7 @@ export default function InstallmentsPage() {
                 </div>
 
                 {/* Metrics Breakdown Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs">
                   <div>
                     <span className="text-[11px] text-slate-400 block">Cicilan Ke-</span>
                     <span className="font-bold text-slate-900 dark:text-white text-sm">
@@ -371,45 +383,45 @@ export default function InstallmentsPage() {
                   </div>
                 </div>
 
-                {/* Progress Bar & Month Actions */}
+                {/* Progress Bar & Repayment Controls */}
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="text-slate-500 dark:text-slate-400">
-                        Kelunasan ({item.persentase_selesai}%)
-                      </span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">
-                        {formatRupiah(item.total_sudah_dibayar)} terbayar
-                      </span>
+                  <div className="flex-1 max-w-md">
+                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <span>Progres Pelunasan: {item.persentase_selesai}%</span>
+                      <span>Terbayar: {formatRupiah(item.total_sudah_dibayar)}</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isLunas ? 'bg-emerald-500' : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isLunas
+                            ? 'bg-emerald-500'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-500'
                         }`}
                         style={{ width: `${item.persentase_selesai}%` }}
                       />
                     </div>
                   </div>
 
-                  {/* Payment Button */}
+                  {/* Payment Action Toggle */}
                   {!isLunas && (
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 self-end sm:self-center">
                       {!item.status_pembayaran_bulan_ini ? (
                         <button
+                          type="button"
                           onClick={() => {
                             setPayingInstId(item.id);
                             setSelectedAccountId(item.preferred_account_id || accounts[0]?.id || '');
                           }}
-                          className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20 transition flex items-center gap-1.5"
+                          className="min-h-[44px] px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition flex items-center gap-1.5"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Bayar Bulan Ini ({formatRupiah(item.nominal_per_bulan)})</span>
                         </button>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => toggleInstallmentPaidStatus(item.id)}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"
+                          className="min-h-[44px] px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                         >
                           Batal Bayar Bulan Ini
                         </button>
@@ -459,11 +471,11 @@ export default function InstallmentsPage() {
               <select
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                className="w-full px-3 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} — Sisa: {formatRupiah(acc.balance)}
+                    {acc.name} (Sisa: {formatRupiah(acc.balance)})
                   </option>
                 ))}
               </select>
@@ -473,7 +485,7 @@ export default function InstallmentsPage() {
               <button
                 type="button"
                 onClick={handleConfirmPay}
-                className="w-full py-3 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition"
+                className="w-full py-3 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
               >
                 Bayar & Potong Saldo ({formatRupiah(instToPay.nominal_per_bulan)})
               </button>
@@ -511,13 +523,14 @@ export default function InstallmentsPage() {
             </div>
 
             <button
+              type="button"
               onClick={() => {
                 navigator.clipboard.writeText(
                   JSON.stringify(formatInstallmentJSON(jsonViewItem), null, 2)
                 );
                 alert('JSON berhasil disalin ke clipboard!');
               }}
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
             >
               Salin JSON ke Clipboard
             </button>

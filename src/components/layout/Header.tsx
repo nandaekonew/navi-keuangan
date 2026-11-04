@@ -9,9 +9,6 @@ import {
   Check,
   Plus,
   ArrowLeftRight,
-  ShieldCheck,
-  User,
-  Sparkles,
   RefreshCw,
 } from 'lucide-react';
 
@@ -69,9 +66,11 @@ export function Header() {
                 </span>
                 <span>•</span>
                 <button
+                  type="button"
                   onClick={handleCopyCode}
+                  aria-label="Salin kode undangan HP pasangan"
                   title="Klik untuk menyalin kode undangan HP pasangan"
-                  className="inline-flex items-center gap-1 font-mono text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded transition"
+                  className="inline-flex items-center gap-1 font-mono text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-md focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                 >
                   <span>{household.invite_code}</span>
                   {copied ? (
@@ -89,15 +88,17 @@ export function Header() {
             {/* Quick Actions for Desktop */}
             <div className="hidden md:flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setTransferOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
               >
                 <ArrowLeftRight className="w-4 h-4 text-slate-500" />
                 <span>Transfer Antar Rekening</span>
               </button>
               <button
+                type="button"
                 onClick={() => setQuickInputOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 transition"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
               >
                 <Plus className="w-4 h-4" />
                 <span>+ Catat Cepat</span>
@@ -106,9 +107,11 @@ export function Header() {
 
             {/* Manual Sync Cloud Button */}
             <button
+              type="button"
               onClick={handleManualSync}
+              aria-label="Sinkronkan data dengan Cloud Supabase"
               title="Sinkronkan data dengan Cloud Supabase"
-              className="p-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
             >
               <RefreshCw
                 className={`w-4 h-4 ${isSyncing ? 'animate-spin text-emerald-600' : 'text-slate-500'}`}
@@ -118,8 +121,10 @@ export function Header() {
             {/* Persona Switcher (Suami 👨💼 / Istri 👩💼) */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">
               <button
+                type="button"
                 onClick={() => switchPersona('suami')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                aria-label="Ganti ke persona Suami"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition-all ${
                   isSuami
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -129,8 +134,10 @@ export function Header() {
                 <span className="hidden sm:inline">Suami</span>
               </button>
               <button
+                type="button"
                 onClick={() => switchPersona('istri')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                aria-label="Ganti ke persona Istri"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition-all ${
                   !isSuami
                     ? 'bg-pink-600 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'

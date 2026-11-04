@@ -25,7 +25,7 @@ export function RecentTransactions() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
@@ -67,12 +67,12 @@ export function RecentTransactions() {
             return (
               <div
                 key={tx.id}
-                className="py-3 flex items-center justify-between gap-3 group"
+                className="py-3 flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Transaction Type Icon */}
                   <div
-                    className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                       tx.type === 'income'
                         ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
                         : tx.type === 'expense'
@@ -98,13 +98,13 @@ export function RecentTransactions() {
                       </span>
                       {/* Persona Badge: Suami / Istri */}
                       <span
-                        className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                        className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                           isSuami
                             ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                             : 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300'
                         }`}
                       >
-                        {isSuami ? '👨 Suami' : '👩 Istri'}
+                        {isSuami ? 'Suami' : 'Istri'}
                       </span>
                     </div>
 
@@ -125,12 +125,14 @@ export function RecentTransactions() {
                 </div>
 
                 {/* Amount & Actions */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   {tx.receipt_url && (
                     <button
+                      type="button"
                       onClick={() => setSelectedReceiptUrl(tx.receipt_url!)}
                       title="Lihat Bukti Struk"
-                      className="p-1 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition"
+                      aria-label="Lihat bukti struk"
+                      className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                     >
                       <Image className="w-4 h-4" />
                     </button>
@@ -152,24 +154,28 @@ export function RecentTransactions() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => {
                       setTransactionToEdit(tx);
                       setIsEditModalOpen(true);
                     }}
                     title="Ubah Transaksi"
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition"
+                    aria-label="Ubah transaksi"
+                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       if (confirm('Hapus transaksi ini?')) {
                         deleteTransaction(tx.id);
                       }
                     }}
                     title="Hapus Transaksi"
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition"
+                    aria-label="Hapus transaksi"
+                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-500 hover:text-red-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -180,25 +186,36 @@ export function RecentTransactions() {
         </div>
       )}
 
-      {/* Struk Modal Preview */}
+      {/* Modal Preview Struk */}
       <Modal
         isOpen={Boolean(selectedReceiptUrl)}
         onClose={() => setSelectedReceiptUrl(null)}
-        title="Foto Bukti Transaksi / Struk"
+        title="Foto Bukti Struk"
         maxWidth="sm"
       >
         {selectedReceiptUrl && (
-          <div className="flex flex-col items-center">
-            <img
-              src={selectedReceiptUrl}
-              alt="Bukti Struk"
-              className="max-h-96 w-auto rounded-xl shadow border"
-            />
+          <div className="space-y-4">
+            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={selectedReceiptUrl}
+                alt="Bukti Struk"
+                className="max-h-[60vh] w-auto object-contain"
+              />
+            </div>
+            <a
+              href={selectedReceiptUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="block w-full py-2.5 text-center text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition"
+            >
+              Buka Gambar Ukuran Penuh ↗
+            </a>
           </div>
         )}
       </Modal>
 
-      {/* Edit Transaction Modal */}
+      {/* Modal Edit Transaksi */}
       <EditTransactionModal
         isOpen={isEditModalOpen}
         onClose={() => {

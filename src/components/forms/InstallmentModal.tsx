@@ -8,11 +8,10 @@ import { formatRupiah, parseRupiahInput } from '@/lib/utils';
 import { calculateInstallment } from '@/lib/installmentUtils';
 import {
   Calendar,
-  CreditCard,
   Building2,
   CheckCircle2,
   Clock,
-  Sparkles,
+  Calculator,
 } from 'lucide-react';
 
 interface InstallmentModalProps {
@@ -55,7 +54,6 @@ export function InstallmentModal({
       setNamaCicilan('');
       setNominal(0);
       setNominalStr('');
-      // Default to 1st of current month
       const today = new Date();
       const defaultStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
       setTanggalMulai(defaultStart);
@@ -99,9 +97,9 @@ export function InstallmentModal({
         tanggal_mulai: tanggalMulai,
         tenor_bulan: Number(tenorBulan),
         status_pembayaran_bulan_ini: statusBayarBulanIni,
-        last_paid_period: statusBayarBulanIni ? currentPeriod : null,
-        preferred_account_id: preferredAccountId || null,
-        notes: notes.trim() || null,
+        last_paid_period: statusBayarBulanIni ? currentPeriod : installmentToEdit.last_paid_period,
+        preferred_account_id: preferredAccountId || undefined,
+        notes: notes.trim() || undefined,
       });
     } else {
       addInstallment({
@@ -111,9 +109,9 @@ export function InstallmentModal({
         tanggal_mulai: tanggalMulai,
         tenor_bulan: Number(tenorBulan),
         status_pembayaran_bulan_ini: statusBayarBulanIni,
-        last_paid_period: statusBayarBulanIni ? currentPeriod : null,
-        preferred_account_id: preferredAccountId || null,
-        notes: notes.trim() || null,
+        last_paid_period: statusBayarBulanIni ? currentPeriod : undefined,
+        preferred_account_id: preferredAccountId || undefined,
+        notes: notes.trim() || undefined,
       });
     }
 
@@ -124,16 +122,15 @@ export function InstallmentModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={installmentToEdit ? 'Ubah Data Cicilan' : 'Tambah Pos Cicilan Baru'}
-      subtitle="Kalkulasi otomatis sisa tenor, sisa tagihan, dan status pelunasan setiap bulan"
-      maxWidth="md"
+      title={installmentToEdit ? 'Edit Rincian Cicilan' : 'Tambah Cicilan Baru'}
+      subtitle="Input tagihan cicilan berjalan dengan kalkulasi otomatis"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Live Calculation Preview Card */}
         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1.5">
+              <Calculator className="w-3.5 h-3.5" />
               Live Preview Kalkulasi Sistem
             </span>
             <span
@@ -290,7 +287,7 @@ export function InstallmentModal({
             >
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
-                  {acc.name} — Sisa: {formatRupiah(acc.balance)}
+                  {acc.name} (Sisa: {formatRupiah(acc.balance)})
                 </option>
               ))}
             </select>
@@ -315,7 +312,7 @@ export function InstallmentModal({
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-3 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-1.5"
+            className="w-full py-3 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition flex items-center justify-center gap-1.5"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>{installmentToEdit ? 'Simpan Perubahan Cicilan' : 'Simpan Data Cicilan'}</span>

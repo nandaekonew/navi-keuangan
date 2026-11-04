@@ -47,6 +47,14 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 158 64% 52%;
   }
+
+  button, select, input[type="checkbox"], input[type="radio"], [role="button"] {
+    cursor: pointer;
+  }
+
+  button:disabled, input:disabled, select:disabled {
+    cursor: not-allowed;
+  }
 }
 
 body {

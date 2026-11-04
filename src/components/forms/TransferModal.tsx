@@ -59,14 +59,13 @@ export function TransferModal() {
       isOpen={isTransferOpen}
       onClose={() => setTransferOpen(false)}
       title="Transfer Antar Rekening"
-      subtitle="Pindahkan dana antar rekening/dompet tanpa dihitung pengeluaran ganda"
-      maxWidth="md"
+      subtitle="Pindahkan dana antar rekening keluarga"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Notice Info */}
-        <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-xs text-blue-800 dark:text-blue-300">
+        {/* Info Box */}
+        <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-blue-800 dark:text-blue-300">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
-          <p>
+          <p className="text-xs leading-relaxed">
             Saldo rekening asal akan terpotong dan rekening tujuan akan bertambah. Arus kas bersih keluarga Anda tetap seimbang.
           </p>
         </div>
@@ -83,7 +82,7 @@ export function TransferModal() {
           >
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
-                {acc.name} — Sisa: {formatRupiah(acc.balance)}
+                {acc.name} (Sisa: {formatRupiah(acc.balance)})
               </option>
             ))}
           </select>
@@ -108,7 +107,7 @@ export function TransferModal() {
           >
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id} disabled={acc.id === fromAccountId}>
-                {acc.name} — Saldo: {formatRupiah(acc.balance)} {acc.id === fromAccountId ? '(Sama)' : ''}
+                {acc.name} (Saldo: {formatRupiah(acc.balance)}){acc.id === fromAccountId ? ' - Sama' : ''}
               </option>
             ))}
           </select>
@@ -158,7 +157,7 @@ export function TransferModal() {
           <button
             type="submit"
             disabled={Boolean(isInvalid)}
-            className={`w-full py-3 rounded-2xl text-xs font-bold text-white transition-all shadow-md ${
+            className={`w-full py-3 rounded-2xl text-xs font-bold text-white transition-all shadow-md focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none ${
               !isInvalid
                 ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
                 : 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed opacity-60'

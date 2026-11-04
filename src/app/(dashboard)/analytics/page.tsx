@@ -86,12 +86,12 @@ export default function AnalyticsPage() {
 
   const personaComparisonData = [
     {
-      nama: 'Suami 👨💼',
+      nama: 'Suami',
       Pengeluaran: suamiExpense,
       Pemasukan: suamiIncome,
     },
     {
-      nama: 'Istri 👩💼',
+      nama: 'Istri',
       Pengeluaran: istriExpense,
       Pemasukan: istriIncome,
     },
@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
       {/* Grid 2 Visualizations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Rasio Pengeluaran per Kategori (Donut Chart) */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-950 text-orange-600">
               <PieIcon className="w-4 h-4" />
@@ -190,7 +190,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Kontribusi & Pencatatan Suami vs Istri */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600">
               <Users className="w-4 h-4" />
@@ -230,7 +230,7 @@ export default function AnalyticsPage() {
 
           <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-4 text-xs">
             <div className="p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
-              <span className="text-[11px] font-bold text-blue-800 dark:text-blue-300">👨 Suami</span>
+              <span className="text-[11px] font-bold text-blue-800 dark:text-blue-300">Suami</span>
               <div className="mt-1 font-black text-slate-900 dark:text-white">
                 Pengeluaran: {formatRupiah(suamiExpense)}
               </div>
@@ -238,7 +238,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="p-3 rounded-2xl bg-pink-50/50 dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/30">
-              <span className="text-[11px] font-bold text-pink-800 dark:text-pink-300">👩 Istri</span>
+              <span className="text-[11px] font-bold text-pink-800 dark:text-pink-300">Istri</span>
               <div className="mt-1 font-black text-slate-900 dark:text-white">
                 Pengeluaran: {formatRupiah(istriExpense)}
               </div>

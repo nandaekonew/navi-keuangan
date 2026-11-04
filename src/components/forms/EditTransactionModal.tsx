@@ -233,7 +233,7 @@ export function EditTransactionModal({
             >
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.persona === 'suami' ? '👨 ' : '👩 '} {m.full_name} ({m.persona})
+                  {m.persona === 'suami' ? '[Suami] ' : '[Istri] '}{m.full_name}
                 </option>
               ))}
             </select>

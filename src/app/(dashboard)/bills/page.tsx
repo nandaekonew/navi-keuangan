@@ -81,7 +81,7 @@ export default function BillsPage() {
 
       {/* Summary Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs text-slate-400 font-semibold block mb-1">
             Total Kewajiban Bulanan
           </span>
@@ -93,7 +93,7 @@ export default function BillsPage() {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs text-slate-400 font-semibold block mb-1">
             Belum Terbayar
           </span>
@@ -105,7 +105,7 @@ export default function BillsPage() {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <span className="text-xs text-slate-400 font-semibold block mb-1">
             Sudah Lunas
           </span>
@@ -155,7 +155,7 @@ export default function BillsPage() {
       {/* Bills Cards List */}
       <div className="space-y-3">
         {filteredBills.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 space-y-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 space-y-2">
             <p>Belum ada tagihan rutin yang terdaftar pada filter ini.</p>
             <button
               onClick={() => {
@@ -175,7 +175,7 @@ export default function BillsPage() {
             return (
               <div
                 key={bill.id}
-                className={`p-4 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                   bill.is_paid
                     ? 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 opacity-80'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
@@ -282,7 +282,8 @@ export default function BillsPage() {
                         setIsBillModalOpen(true);
                       }}
                       title="Ubah Tagihan"
-                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                      aria-label={`Ubah tagihan ${bill.name}`}
+                      className="min-w-[44px] min-h-[44px] p-2 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center justify-center"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -294,7 +295,8 @@ export default function BillsPage() {
                         }
                       }}
                       title="Hapus Tagihan"
-                      className="p-1.5 text-slate-300 hover:text-red-500 rounded-lg transition"
+                      aria-label={`Hapus tagihan ${bill.name}`}
+                      className="min-w-[44px] min-h-[44px] p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none flex items-center justify-center"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -338,7 +340,7 @@ export default function BillsPage() {
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} — Sisa: {formatRupiah(acc.balance)}
+                    {acc.name} (Sisa: {formatRupiah(acc.balance)})
                   </option>
                 ))}
               </select>

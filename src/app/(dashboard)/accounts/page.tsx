@@ -5,7 +5,6 @@ import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatRupiah } from '@/lib/utils';
 import { AccountModal } from '@/components/forms/AccountModal';
 import {
-  WalletCards,
   Building2,
   Smartphone,
   Banknote,
@@ -56,18 +55,20 @@ export default function AccountsPage() {
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setTransferOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition shadow-sm"
           >
             <ArrowLeftRight className="w-4 h-4 text-slate-500" />
             <span>Transfer Saldo</span>
           </button>
           <button
+            type="button"
             onClick={() => {
               setAccountToEdit(null);
               setIsAccountModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
           >
             <Plus className="w-4 h-4" />
             <span>+ Tambah Rekening</span>
@@ -76,7 +77,7 @@ export default function AccountsPage() {
       </div>
 
       {/* Total Balance Hero Banner */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -91,8 +92,9 @@ export default function AccountsPage() {
           </div>
 
           <button
+            type="button"
             onClick={() => setTransferOpen(true)}
-            className="self-start sm:self-center px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-2 backdrop-blur-sm transition border border-white/10"
+            className="self-start sm:self-center px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-2 backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition border border-white/10"
           >
             <ArrowLeftRight className="w-4 h-4" />
             <span>Pindahkan Saldo Antar Rekening</span>
@@ -107,7 +109,7 @@ export default function AccountsPage() {
           return (
             <div
               key={acc.id}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-md transition"
+              className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-md transition"
             >
               {/* Color Accent Bar */}
               <div
@@ -118,7 +120,7 @@ export default function AccountsPage() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-sm"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm"
                     style={{ backgroundColor: acc.color || '#10b981' }}
                   >
                     <Icon className="w-5 h-5" />
@@ -133,26 +135,30 @@ export default function AccountsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                <div className="flex items-center gap-1">
                   <button
+                    type="button"
                     onClick={() => {
                       setAccountToEdit(acc);
                       setIsAccountModalOpen(true);
                     }}
                     title="Ubah Rekening"
-                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                    aria-label="Ubah rekening"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   {accounts.length > 1 && (
                     <button
+                      type="button"
                       onClick={() => {
                         if (confirm(`Yakin ingin menghapus rekening ${acc.name}?`)) {
                           deleteAccount(acc.id);
                         }
                       }}
                       title="Hapus Rekening"
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
+                      aria-label="Hapus rekening"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-red-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

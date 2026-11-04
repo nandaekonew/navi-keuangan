@@ -9,10 +9,9 @@ import { TransactionType } from '@/types';
 import {
   Camera,
   X,
-  Check,
   Tag,
-  CreditCard,
-  Calendar,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from 'lucide-react';
 
 export function QuickTransactionModal() {
@@ -102,7 +101,7 @@ export function QuickTransactionModal() {
       isOpen={isQuickInputOpen}
       onClose={() => setQuickInputOpen(false)}
       title="Catat Transaksi Cepat"
-      subtitle={`Pencatatan < 5 detik oleh ${currentUser?.full_name} (${currentUser?.persona === 'suami' ? 'Suami 👨💼' : 'Istri 👩💼'})`}
+      subtitle={`Pencatatan cepat oleh ${currentUser?.full_name} (${currentUser?.persona === 'suami' ? 'Suami' : 'Istri'})`}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,24 +110,26 @@ export function QuickTransactionModal() {
           <button
             type="button"
             onClick={() => setType('expense')}
-            className={`py-2 text-xs font-bold rounded-xl transition ${
+            className={`py-2 px-3 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition ${
               type === 'expense'
                 ? 'bg-red-500 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            💸 Pengeluaran
+            <ArrowUpRight className="w-4 h-4" />
+            <span>Pengeluaran</span>
           </button>
           <button
             type="button"
             onClick={() => setType('income')}
-            className={`py-2 text-xs font-bold rounded-xl transition ${
+            className={`py-2 px-3 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition ${
               type === 'income'
                 ? 'bg-emerald-500 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            💰 Pemasukan
+            <ArrowDownLeft className="w-4 h-4" />
+            <span>Pemasukan</span>
           </button>
         </div>
 
@@ -160,7 +161,7 @@ export function QuickTransactionModal() {
               key={amt}
               type="button"
               onClick={() => addPreset(amt)}
-              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
             >
               +{amt >= 1000 ? `${amt / 1000}rb` : amt}
             </button>
@@ -169,7 +170,7 @@ export function QuickTransactionModal() {
             <button
               type="button"
               onClick={clearNominal}
-              className="px-2 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 transition"
+              className="px-2 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
             >
               Reset
             </button>
@@ -189,7 +190,7 @@ export function QuickTransactionModal() {
                   key={acc.id}
                   type="button"
                   onClick={() => setSelectedAccountId(acc.id)}
-                  className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition ${
+                  className={`flex flex-col items-start p-2.5 rounded-xl border text-left focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition ${
                     isSelected
                       ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200'
                       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
@@ -219,7 +220,7 @@ export function QuickTransactionModal() {
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition ${
                     isSelected
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-transparent hover:bg-slate-200'
@@ -267,6 +268,7 @@ export function QuickTransactionModal() {
           </label>
           {receiptPreview ? (
             <div className="relative inline-block border rounded-xl overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={receiptPreview}
                 alt="Bukti Transaksi"
@@ -275,7 +277,8 @@ export function QuickTransactionModal() {
               <button
                 type="button"
                 onClick={() => setReceiptPreview(null)}
-                className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
+                aria-label="Hapus foto bukti"
+                className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -300,7 +303,7 @@ export function QuickTransactionModal() {
           <button
             type="submit"
             disabled={nominal <= 0 || !selectedAccountId}
-            className={`w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all shadow-md ${
+            className={`w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all shadow-md focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
               nominal > 0 && selectedAccountId
                 ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 shadow-emerald-500/30'
                 : 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed opacity-60'

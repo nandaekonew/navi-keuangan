@@ -43,7 +43,7 @@ export function StatCards() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total Saldo Rekening & Kas */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
         <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl" />
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-slate-300">
@@ -62,7 +62,7 @@ export function StatCards() {
       </div>
 
       {/* Pemasukan Bulan Ini */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Pemasukan Bulan Ini
@@ -81,7 +81,7 @@ export function StatCards() {
       </div>
 
       {/* Pengeluaran Bulan Ini */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Pengeluaran Bulan Ini
@@ -100,7 +100,7 @@ export function StatCards() {
       </div>
 
       {/* Sisa Arus Kas / Surplus */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Surplus Kas Bulan Ini

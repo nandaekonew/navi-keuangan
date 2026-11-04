@@ -10,9 +10,6 @@ import {
   CreditCard,
   Plus,
   ArrowRight,
-  CheckCircle2,
-  Clock,
-  Sparkles,
 } from 'lucide-react';
 
 export function InstallmentsQuickWidget() {
@@ -29,7 +26,7 @@ export function InstallmentsQuickWidget() {
   const unpaidThisMonthCount = activeInstallments.filter((i) => !i.status_pembayaran_bulan_ini).length;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
@@ -53,8 +50,9 @@ export function InstallmentsQuickWidget() {
         </div>
 
         <button
+          type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 bg-purple-50 dark:bg-purple-950/50 px-2.5 py-1.5 rounded-xl transition"
+          className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 bg-purple-50 dark:bg-purple-950/50 px-2.5 py-1.5 rounded-xl focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none transition"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Tambah</span>
@@ -73,7 +71,7 @@ export function InstallmentsQuickWidget() {
           {activeInstallments.slice(0, 3).map((item) => (
             <div
               key={item.id}
-              className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 flex flex-col gap-2"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
