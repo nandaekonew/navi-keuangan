@@ -69,7 +69,7 @@ export function RecentTransactions() {
                 key={tx.id}
                 className="py-3 flex items-center justify-between gap-3"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Transaction Type Icon */}
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -89,7 +89,7 @@ export function RecentTransactions() {
                     )}
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {tx.type === 'transfer'
@@ -98,7 +98,7 @@ export function RecentTransactions() {
                       </span>
                       {/* Persona Badge: Suami / Istri */}
                       <span
-                        className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                        className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
                           isSuami
                             ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                             : 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300'
@@ -108,14 +108,18 @@ export function RecentTransactions() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      <span>{formatDateIndo(tx.transaction_date)}</span>
-                      <span>•</span>
-                      <span className="truncate">{account?.name || 'Rekening'}</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 min-w-0">
+                      <span className="whitespace-nowrap shrink-0 font-medium">
+                        {formatDateIndo(tx.transaction_date)}
+                      </span>
+                      <span className="shrink-0 text-slate-300 dark:text-slate-600">•</span>
+                      <span className="truncate max-w-[120px] sm:max-w-[160px] shrink-0">
+                        {account?.name || 'Rekening'}
+                      </span>
                       {tx.description && (
                         <>
-                          <span>•</span>
-                          <span className="truncate italic max-w-[120px] sm:max-w-xs">
+                          <span className="shrink-0 text-slate-300 dark:text-slate-600">•</span>
+                          <span className="truncate italic text-slate-400 dark:text-slate-500">
                             {tx.description}
                           </span>
                         </>
@@ -125,22 +129,10 @@ export function RecentTransactions() {
                 </div>
 
                 {/* Amount & Actions */}
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  {tx.receipt_url && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedReceiptUrl(tx.receipt_url!)}
-                      title="Lihat Bukti Struk"
-                      aria-label="Lihat bukti struk"
-                      className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
-                    >
-                      <Image className="w-4 h-4" />
-                    </button>
-                  )}
-
+                <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right">
                     <div
-                      className={`text-xs font-black tracking-tight ${
+                      className={`text-xs sm:text-sm font-black tracking-tight ${
                         tx.type === 'income'
                           ? 'text-emerald-600 dark:text-emerald-400'
                           : tx.type === 'expense'
@@ -153,32 +145,46 @@ export function RecentTransactions() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTransactionToEdit(tx);
-                      setIsEditModalOpen(true);
-                    }}
-                    title="Ubah Transaksi"
-                    aria-label="Ubah transaksi"
-                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-0.5 p-0.5 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+                    {tx.receipt_url && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReceiptUrl(tx.receipt_url!)}
+                        title="Lihat Bukti Struk"
+                        aria-label="Lihat bukti struk"
+                        className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-700 transition"
+                      >
+                        <Image className="w-3.5 h-3.5" />
+                      </button>
+                    )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm('Hapus transaksi ini?')) {
-                        deleteTransaction(tx.id);
-                      }
-                    }}
-                    title="Hapus Transaksi"
-                    aria-label="Hapus transaksi"
-                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-500 hover:text-red-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTransactionToEdit(tx);
+                        setIsEditModalOpen(true);
+                      }}
+                      title="Ubah Transaksi"
+                      aria-label="Ubah transaksi"
+                      className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-700 transition"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Hapus transaksi ini?')) {
+                          deleteTransaction(tx.id);
+                        }
+                      }}
+                      title="Hapus Transaksi"
+                      aria-label="Hapus transaksi"
+                      className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-red-600 hover:bg-white dark:hover:bg-slate-700 transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

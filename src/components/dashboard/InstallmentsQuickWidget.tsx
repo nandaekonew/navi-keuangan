@@ -27,23 +27,23 @@ export function InstallmentsQuickWidget() {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 shrink-0">
             <CreditCard className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                 Cicilan & Pinjaman Aktif
               </h3>
               {unpaidThisMonthCount > 0 && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 whitespace-nowrap">
                   {unpaidThisMonthCount} Belum Bayar
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
               Pantau sisa tenor & pelunasan hutang
             </p>
           </div>
@@ -52,7 +52,7 @@ export function InstallmentsQuickWidget() {
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 bg-purple-50 dark:bg-purple-950/50 px-2.5 py-1.5 rounded-xl focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none transition"
+          className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 bg-purple-50 dark:bg-purple-950/50 px-2.5 py-1.5 rounded-xl focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:outline-none transition shrink-0 ml-1"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Tambah</span>
@@ -71,25 +71,25 @@ export function InstallmentsQuickWidget() {
           {activeInstallments.slice(0, 3).map((item) => (
             <div
               key={item.id}
-              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 flex flex-col gap-2"
+              className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 flex flex-col gap-2.5"
             >
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate" title={item.nama_cicilan}>
                     {item.nama_cicilan}
                   </h4>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                  <span className="text-[10px] text-slate-400 block truncate mt-0.5">
                     Cicilan Ke-{item.bulan_yang_dibayar} dari {item.tenor_bulan} bln • Sisa: {item.sisa_tenor} bln lagi
                   </span>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right shrink-0 pl-2">
                   <div className="font-black text-xs text-slate-900 dark:text-white">
                     {formatRupiah(item.nominal_per_bulan)}
                     <span className="text-[10px] font-normal text-slate-400">/bln</span>
                   </div>
                   <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                    className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${
                       item.status_pembayaran_bulan_ini
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                         : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'

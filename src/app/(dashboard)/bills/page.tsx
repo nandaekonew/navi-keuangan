@@ -224,7 +224,7 @@ export default function BillsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                      <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap shrink-0">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         Jatuh tempo tgl {bill.due_day} setiap bulan
                       </span>

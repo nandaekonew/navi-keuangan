@@ -245,7 +245,7 @@ export default function TransactionsPage() {
                   key={tx.id}
                   className="py-3.5 flex items-center justify-between gap-3"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                         tx.type === 'income'
@@ -264,7 +264,7 @@ export default function TransactionsPage() {
                       )}
                     </div>
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
                           {tx.type === 'transfer'
@@ -272,7 +272,7 @@ export default function TransactionsPage() {
                             : category?.name || tx.description || 'Transaksi'}
                         </span>
                         <span
-                          className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                             isSuami
                               ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                               : 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300'
@@ -282,36 +282,30 @@ export default function TransactionsPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        <span>{formatDateIndo(tx.transaction_date)}</span>
-                        <span>•</span>
-                        <span>{account?.name}</span>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1 min-w-0">
+                        <span className="whitespace-nowrap shrink-0 font-medium">
+                          {formatDateIndo(tx.transaction_date)}
+                        </span>
+                        <span className="shrink-0 text-slate-300 dark:text-slate-600">•</span>
+                        <span className="truncate max-w-[120px] sm:max-w-[200px] shrink-0">
+                          {account?.name}
+                        </span>
                         {tx.description && (
                           <>
-                            <span>•</span>
-                            <span className="truncate italic max-w-xs">{tx.description}</span>
+                            <span className="shrink-0 text-slate-300 dark:text-slate-600">•</span>
+                            <span className="truncate italic text-slate-400 dark:text-slate-500 max-w-xs">
+                              {tx.description}
+                            </span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    {tx.receipt_url && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedReceiptUrl(tx.receipt_url!)}
-                        title="Lihat Struk"
-                        aria-label="Lihat bukti struk"
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
-                      >
-                        <Image className="w-4 h-4" />
-                      </button>
-                    )}
-
+                  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
                     <div className="text-right">
                       <div
-                        className={`text-sm font-black ${
+                        className={`text-sm font-black tracking-tight ${
                           tx.type === 'income'
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : tx.type === 'expense'
@@ -324,7 +318,19 @@ export default function TransactionsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 p-0.5 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+                      {tx.receipt_url && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReceiptUrl(tx.receipt_url!)}
+                          title="Lihat Struk"
+                          aria-label="Lihat bukti struk"
+                          className="w-8 h-8 flex items-center justify-center rounded text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-700 transition"
+                        >
+                          <Image className="w-4 h-4" />
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => {
@@ -333,7 +339,7 @@ export default function TransactionsPage() {
                         }}
                         title="Ubah Transaksi"
                         aria-label="Ubah transaksi"
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
+                        className="w-8 h-8 flex items-center justify-center rounded text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-700 transition"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -347,7 +353,7 @@ export default function TransactionsPage() {
                         }}
                         title="Hapus Transaksi"
                         aria-label="Hapus transaksi"
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-500 hover:text-red-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
+                        className="w-8 h-8 flex items-center justify-center rounded text-slate-400 hover:text-red-600 hover:bg-white dark:hover:bg-slate-700 transition"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
