@@ -8,6 +8,7 @@ import {
   Category,
   Household,
   RecurringBill,
+  Installment,
   Transaction,
   UserProfile,
   UserPersona,
@@ -241,6 +242,33 @@ const initialBills: RecurringBill[] = [
   },
 ];
 
+const initialInstallments: Installment[] = [
+  {
+    id: 'inst-1',
+    household_id: 'hh-navi-001',
+    nama_cicilan: 'KPR Rumah Tipe 45',
+    nominal_per_bulan: 3500000,
+    tanggal_mulai: '2024-01-01',
+    tenor_bulan: 120,
+    status_pembayaran_bulan_ini: false,
+    last_paid_period: null,
+    preferred_account_id: 'acc-1',
+    notes: 'KPR Bank BTN Syariah',
+  },
+  {
+    id: 'inst-2',
+    household_id: 'hh-navi-001',
+    nama_cicilan: 'HP Samsung S24 Ultra',
+    nominal_per_bulan: 1250000,
+    tanggal_mulai: '2024-03-01',
+    tenor_bulan: 12,
+    status_pembayaran_bulan_ini: true,
+    last_paid_period: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+    preferred_account_id: 'acc-2',
+    notes: 'Cicilan 0% Gadget',
+  },
+];
+
 interface NaviStoreState {
   household: Household;
   currentUser: UserProfile;
@@ -250,6 +278,7 @@ interface NaviStoreState {
   transactions: Transaction[];
   budgets: Budget[];
   recurringBills: RecurringBill[];
+  installments: Installment[];
   
   // UI States
   isQuickInputOpen: boolean;
@@ -292,6 +321,13 @@ interface NaviStoreState {
   toggleBillPaidStatus: (billId: string) => void;
   deleteRecurringBill: (billId: string) => void;
 
+  // Cicilan (Installments)
+  addInstallment: (installment: Omit<Installment, 'id' | 'created_at'>) => void;
+  updateInstallment: (id: string, data: Partial<Installment>) => void;
+  deleteInstallment: (id: string) => void;
+  toggleInstallmentPaidStatus: (id: string) => void;
+  payInstallment: (id: string, accountId?: string) => void;
+
   // Sync with Supabase
   syncWithSupabase: () => Promise<void>;
 }
@@ -307,6 +343,7 @@ export const useNaviStore = create<NaviStoreState>()(
       transactions: initialTransactions,
       budgets: initialBudgets,
       recurringBills: initialBills,
+      installments: initialInstallments,
       isQuickInputOpen: false,
       isTransferOpen: false,
       isSupabaseActive: isSupabaseConfigured(),
@@ -891,6 +928,152 @@ export const useNaviStore = create<NaviStoreState>()(
         }
       },
 
+      addInstallment: (installmentData) => {
+        const newInst: Installment = {
+          ...installmentData,
+          id: `inst-${Date.now()}`,
+          created_at: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          installments: [...state.installments, newInst],
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('installments')
+            .insert([newInst])
+            .then(({ error }) => {
+              if (error) console.error('Error inserting installment into Supabase:', error);
+            });
+        }
+      },
+
+      updateInstallment: (id, data) => {
+        set((state) => ({
+          installments: state.installments.map((i) => (i.id === id ? { ...i, ...data } : i)),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('installments')
+            .update(data)
+            .eq('id', id)
+            .then(({ error }) => {
+              if (error) console.error('Error updating installment in Supabase:', error);
+            });
+        }
+      },
+
+      deleteInstallment: (id) => {
+        set((state) => ({
+          installments: state.installments.filter((i) => i.id !== id),
+        }));
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('installments')
+            .delete()
+            .eq('id', id)
+            .then(({ error }) => {
+              if (error) console.error('Error deleting installment from Supabase:', error);
+            });
+        }
+      },
+
+      toggleInstallmentPaidStatus: (id) => {
+        const now = new Date();
+        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        let updatedPaidStatus = false;
+        let lastPeriod: string | null = null;
+
+        set((state) => {
+          const updated = state.installments.map((i) => {
+            if (i.id === id) {
+              updatedPaidStatus = !i.status_pembayaran_bulan_ini;
+              lastPeriod = updatedPaidStatus ? currentPeriod : null;
+              return {
+                ...i,
+                status_pembayaran_bulan_ini: updatedPaidStatus,
+                last_paid_period: lastPeriod,
+              };
+            }
+            return i;
+          });
+          return { installments: updated };
+        });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('installments')
+            .update({
+              status_pembayaran_bulan_ini: updatedPaidStatus,
+              last_paid_period: lastPeriod,
+            })
+            .eq('id', id)
+            .then(({ error }) => {
+              if (error) console.error('Error updating installment paid status in Supabase:', error);
+            });
+        }
+      },
+
+      payInstallment: (id, accountId) => {
+        const state = get();
+        const inst = state.installments.find((i) => i.id === id);
+        if (!inst) return;
+
+        const payingAccountId = accountId || inst.preferred_account_id || state.accounts[0]?.id;
+        if (!payingAccountId) return;
+
+        const now = new Date();
+        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        const cicilanCat = state.categories.find(
+          (c) => c.name.toLowerCase().includes('cicilan') || c.name.toLowerCase().includes('tagihan')
+        );
+
+        state.addTransaction({
+          household_id: state.household.id,
+          account_id: payingAccountId,
+          category_id: cicilanCat?.id || null,
+          user_id: state.currentUser.id,
+          type: 'expense',
+          amount: inst.nominal_per_bulan,
+          transaction_date: now.toISOString().split('T')[0],
+          description: `Pembayaran Cicilan: ${inst.nama_cicilan}`,
+        });
+
+        set({
+          installments: state.installments.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  status_pembayaran_bulan_ini: true,
+                  last_paid_period: currentPeriod,
+                }
+              : i
+          ),
+        });
+
+        if (isSupabaseConfigured()) {
+          const supabase = createClient();
+          supabase
+            .from('installments')
+            .update({
+              status_pembayaran_bulan_ini: true,
+              last_paid_period: currentPeriod,
+            })
+            .eq('id', id)
+            .then(({ error }) => {
+              if (error) console.error('Error updating paid installment in Supabase:', error);
+            });
+        }
+      },
+
       syncWithSupabase: async () => {
         if (!isSupabaseConfigured()) return;
         try {
@@ -926,6 +1109,7 @@ export const useNaviStore = create<NaviStoreState>()(
           const { data: categories } = await supabase.from('categories').select('*');
           const { data: budgets } = await supabase.from('budgets').select('*');
           const { data: bills } = await supabase.from('recurring_bills').select('*');
+          const { data: insts } = await supabase.from('installments').select('*');
 
           if (households && households[0]) set({ household: households[0] });
           if (members && members.length > 0) {
@@ -939,6 +1123,7 @@ export const useNaviStore = create<NaviStoreState>()(
           if (categories && categories.length > 0) set({ categories });
           if (budgets) set({ budgets });
           if (bills) set({ recurringBills: bills });
+          if (insts) set({ installments: insts });
         } catch (e) {
           console.error('Error syncing with Supabase:', e);
         }
@@ -955,6 +1140,7 @@ export const useNaviStore = create<NaviStoreState>()(
         transactions: state.transactions,
         budgets: state.budgets,
         recurringBills: state.recurringBills,
+        installments: state.installments,
       }),
     }
   )

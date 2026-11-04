@@ -95,3 +95,30 @@ export interface RecurringBill {
   notes?: string | null;
   created_at?: string;
 }
+
+export type InstallmentStatus = 'ACTIVE' | 'LUNAS';
+
+export interface Installment {
+  id: string;
+  household_id: string;
+  nama_cicilan: string;
+  nominal_per_bulan: number;
+  tanggal_mulai: string; // YYYY-MM-DD atau MM/YYYY
+  tenor_bulan: number;
+  status_pembayaran_bulan_ini: boolean;
+  last_paid_period?: string | null; // e.g. "2026-11"
+  preferred_account_id?: string | null;
+  notes?: string | null;
+  created_at?: string;
+}
+
+export interface CalculatedInstallment extends Installment {
+  bulan_yang_dibayar: number;
+  sisa_tenor: number;
+  sisa_tagihan: number;
+  total_sudah_dibayar: number;
+  persentase_selesai: number;
+  status: InstallmentStatus;
+  tampilkan_di_dashboard: boolean;
+  tanggal_estimasi_lunas: string;
+}

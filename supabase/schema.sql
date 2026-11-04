@@ -4,6 +4,7 @@
 -- ==========================================================
 
 -- Hapus tabel lama jika ada agar bersih dan fresh
+DROP TABLE IF EXISTS installments CASCADE;
 DROP TABLE IF EXISTS transactions CASCADE;
 DROP TABLE IF EXISTS budgets CASCADE;
 DROP TABLE IF EXISTS recurring_bills CASCADE;
@@ -97,6 +98,21 @@ CREATE TABLE recurring_bills (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 8. Tabel Cicilan (Installments)
+CREATE TABLE installments (
+    id TEXT PRIMARY KEY,
+    household_id TEXT REFERENCES households(id) ON DELETE CASCADE,
+    nama_cicilan VARCHAR(100) NOT NULL,
+    nominal_per_bulan DECIMAL(15, 2) NOT NULL,
+    tanggal_mulai DATE NOT NULL,
+    tenor_bulan INT NOT NULL,
+    status_pembayaran_bulan_ini BOOLEAN DEFAULT false,
+    last_paid_period VARCHAR(10),
+    preferred_account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ==========================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- Izinkan akses publik (anon key) agar HP Suami & Istri dapat tersinkronisasi
@@ -108,6 +124,7 @@ ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recurring_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE installments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public all on households" ON households FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public all on users" ON users FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
@@ -116,6 +133,7 @@ CREATE POLICY "Allow public all on categories" ON categories FOR ALL TO anon, au
 CREATE POLICY "Allow public all on transactions" ON transactions FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public all on budgets" ON budgets FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public all on recurring_bills" ON recurring_bills FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public all on installments" ON installments FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
 -- ==========================================================
 -- REALTIME BROADCAST
@@ -124,5 +142,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE transactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE accounts;
 ALTER PUBLICATION supabase_realtime ADD TABLE budgets;
 ALTER PUBLICATION supabase_realtime ADD TABLE recurring_bills;
+ALTER PUBLICATION supabase_realtime ADD TABLE installments;
 ALTER PUBLICATION supabase_realtime ADD TABLE users;
 ALTER PUBLICATION supabase_realtime ADD TABLE households;

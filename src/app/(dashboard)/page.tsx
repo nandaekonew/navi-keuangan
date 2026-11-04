@@ -6,6 +6,7 @@ import { StatCards } from '@/components/dashboard/StatCards';
 import { CashflowChart } from '@/components/dashboard/CashflowChart';
 import { BudgetProgressList } from '@/components/dashboard/BudgetProgressList';
 import { BillsQuickWidget } from '@/components/dashboard/BillsQuickWidget';
+import { InstallmentsQuickWidget } from '@/components/dashboard/InstallmentsQuickWidget';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { Plus, ArrowLeftRight, Sparkles, Smartphone } from 'lucide-react';
 
@@ -75,6 +76,7 @@ export default function DashboardOverviewPage() {
         <div className="space-y-6">
           <BudgetProgressList />
           <BillsQuickWidget />
+          <InstallmentsQuickWidget />
         </div>
       </div>
     </div>

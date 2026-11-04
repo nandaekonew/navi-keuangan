@@ -9,6 +9,7 @@ import {
   WalletCards,
   PieChart,
   CheckSquare,
+  CreditCard,
   BarChart3,
   Settings,
   Sparkles,
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/accounts', label: 'Dompet & Akun', icon: WalletCards },
   { href: '/budgets', label: 'Pos Alokasi', icon: PieChart },
   { href: '/bills', label: 'Tagihan Rutin', icon: CheckSquare },
+  { href: '/installments', label: 'Cicilan', icon: CreditCard },
   { href: '/analytics', label: 'Rekap & Grafik', icon: BarChart3 },
   { href: '/settings', label: 'Pengaturan', icon: Settings },
 ];

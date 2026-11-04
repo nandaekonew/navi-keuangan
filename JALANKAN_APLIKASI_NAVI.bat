@@ -1,12 +1,13 @@
 @echo off
 title Menjalankan Aplikasi Management Keuangan Navi
 color 0A
-cd /d "D:\2. FILE NANDA\NANDA AI"
-set "PATH=D:\nodejs;%PATH%"
+cd /d "%~dp0"
+set "PATH=D:\nodejs;D:\git\cmd;%PATH%"
 
 echo ============================================================
 echo   APLIKASI MANAGEMENT KEUANGAN NAVI (MULTI-USER)
 echo ============================================================
+echo Lokasi Folder: %~dp0
 echo.
 echo Sedang menyiapkan server aplikasi...
 echo Jangan tutup jendela ini selama menggunakan aplikasi.
