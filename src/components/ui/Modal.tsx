@@ -9,7 +9,7 @@ interface ModalProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 export function Modal({
@@ -45,6 +45,7 @@ export function Modal({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
   }[maxWidth];
 
   return (
@@ -76,17 +77,15 @@ export function Modal({
             )}
           </div>
           <button
-            type="button"
             onClick={onClose}
-            aria-label="Tutup modal"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto">
+        <div className="p-5 overflow-y-auto space-y-4">
           {children}
         </div>
       </div>
