@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatDateIndo, formatRupiah, exportTransactionsToCSV } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
@@ -16,6 +16,12 @@ import {
   Trash2,
   Image,
   Pencil,
+  ArrowUpDown,
+  Tag,
+  Calendar,
+  RotateCcw,
+  Wallet,
+  X,
 } from 'lucide-react';
 
 export default function TransactionsPage() {
@@ -32,48 +38,196 @@ export default function TransactionsPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedPersona, setSelectedPersona] = useState<string>('all');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
+
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Filter transactions
-  const filteredTransactions = transactions.filter((tx) => {
-    // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const cat = categories.find((c) => c.id === tx.category_id)?.name.toLowerCase() || '';
-      const desc = (tx.description || '').toLowerCase();
-      const acc = accounts.find((a) => a.id === tx.account_id)?.name.toLowerCase() || '';
-      if (!cat.includes(q) && !desc.includes(q) && !acc.includes(q)) {
+  // Waktu saat ini untuk filter periode
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // 1. Filter Transaksi
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      // Pencarian kata kunci
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const cat = categories.find((c) => c.id === tx.category_id)?.name.toLowerCase() || '';
+        const desc = (tx.description || '').toLowerCase();
+        const acc = accounts.find((a) => a.id === tx.account_id)?.name.toLowerCase() || '';
+        if (!cat.includes(q) && !desc.includes(q) && !acc.includes(q)) {
+          return false;
+        }
+      }
+
+      // Filter Tipe (Pemasukan, Pengeluaran, Transfer)
+      if (selectedType !== 'all' && tx.type !== selectedType) {
         return false;
       }
-    }
 
-    // Type
-    if (selectedType !== 'all' && tx.type !== selectedType) {
-      return false;
-    }
-
-    // Persona
-    if (selectedPersona !== 'all') {
-      const user = members.find((m) => m.id === tx.user_id);
-      if (user?.persona !== selectedPersona) {
+      // Filter Kategori
+      if (selectedCategoryId !== 'all' && tx.category_id !== selectedCategoryId) {
         return false;
       }
-    }
 
-    // Account
-    if (selectedAccountId !== 'all') {
-      if (tx.account_id !== selectedAccountId && tx.destination_account_id !== selectedAccountId) {
-        return false;
+      // Filter Persona (Suami / Istri)
+      if (selectedPersona !== 'all') {
+        const user = members.find((m) => m.id === tx.user_id);
+        if (user?.persona !== selectedPersona) {
+          return false;
+        }
       }
-    }
 
-    return true;
-  });
+      // Filter Rekening Sumber / Tujuan
+      if (selectedAccountId !== 'all') {
+        if (tx.account_id !== selectedAccountId && tx.destination_account_id !== selectedAccountId) {
+          return false;
+        }
+      }
+
+      // Filter Rentang Waktu (Periode)
+      if (selectedPeriod !== 'all') {
+        const txDate = new Date(tx.transaction_date);
+        if (selectedPeriod === 'this_month') {
+          if (txDate.getMonth() !== currentMonth || txDate.getFullYear() !== currentYear) {
+            return false;
+          }
+        } else if (selectedPeriod === 'last_month') {
+          const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+          if (txDate.getMonth() !== lastMonth || txDate.getFullYear() !== lastMonthYear) {
+            return false;
+          }
+        } else if (selectedPeriod === 'this_year') {
+          if (txDate.getFullYear() !== currentYear) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [
+    transactions,
+    searchQuery,
+    selectedType,
+    selectedCategoryId,
+    selectedPersona,
+    selectedAccountId,
+    selectedPeriod,
+    categories,
+    accounts,
+    members,
+    currentMonth,
+    currentYear,
+  ]);
+
+  // 2. Sort Transaksi
+  const sortedTransactions = useMemo(() => {
+    return [...filteredTransactions].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+
+        case 'oldest':
+          return new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime();
+
+        case 'expense_highest': {
+          // Prioritaskan pengeluaran, urutkan dari nominal terbesar
+          const isExpA = a.type === 'expense';
+          const isExpB = b.type === 'expense';
+          if (isExpA && !isExpB) return -1;
+          if (!isExpA && isExpB) return 1;
+          return b.amount - a.amount;
+        }
+
+        case 'expense_lowest': {
+          // Prioritaskan pengeluaran, urutkan dari nominal terkecil
+          const isExpA = a.type === 'expense';
+          const isExpB = b.type === 'expense';
+          if (isExpA && !isExpB) return -1;
+          if (!isExpA && isExpB) return 1;
+          return a.amount - b.amount;
+        }
+
+        case 'income_highest': {
+          // Prioritaskan pemasukan, urutkan dari nominal terbesar
+          const isIncA = a.type === 'income';
+          const isIncB = b.type === 'income';
+          if (isIncA && !isIncB) return -1;
+          if (!isIncA && isIncB) return 1;
+          return b.amount - a.amount;
+        }
+
+        case 'income_lowest': {
+          // Prioritaskan pemasukan, urutkan dari nominal terkecil
+          const isIncA = a.type === 'income';
+          const isIncB = b.type === 'income';
+          if (isIncA && !isIncB) return -1;
+          if (!isIncA && isIncB) return 1;
+          return a.amount - b.amount;
+        }
+
+        case 'amount_highest':
+          return b.amount - a.amount;
+
+        case 'amount_lowest':
+          return a.amount - b.amount;
+
+        case 'category_asc': {
+          const catA = categories.find((c) => c.id === a.category_id)?.name || a.description || '';
+          const catB = categories.find((c) => c.id === b.category_id)?.name || b.description || '';
+          return catA.localeCompare(catB);
+        }
+
+        default:
+          return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+      }
+    });
+  }, [filteredTransactions, sortBy, categories]);
+
+  // 3. Ringkasan Kalkulasi Hasil Filter
+  const summaryMetrics = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    filteredTransactions.forEach((tx) => {
+      if (tx.type === 'income') income += tx.amount;
+      else if (tx.type === 'expense') expense += tx.amount;
+    });
+    return {
+      count: filteredTransactions.length,
+      income,
+      expense,
+      net: income - expense,
+    };
+  }, [filteredTransactions]);
+
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    selectedType !== 'all' ||
+    selectedPersona !== 'all' ||
+    selectedAccountId !== 'all' ||
+    selectedCategoryId !== 'all' ||
+    selectedPeriod !== 'all' ||
+    sortBy !== 'newest';
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedType('all');
+    setSelectedPersona('all');
+    setSelectedAccountId('all');
+    setSelectedCategoryId('all');
+    setSelectedPeriod('all');
+    setSortBy('newest');
+  };
 
   const handleExportCSV = () => {
-    const enriched = filteredTransactions.map((tx) => {
+    const enriched = sortedTransactions.map((tx) => {
       const user = members.find((m) => m.id === tx.user_id);
       const acc = accounts.find((a) => a.id === tx.account_id);
       const dest = tx.destination_account_id
@@ -95,7 +249,7 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -103,7 +257,7 @@ export default function TransactionsPage() {
             Riwayat Transaksi Keuangan
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Daftar lengkap arus kas rumah tangga dengan atribusi pencatat
+            Kelola, filter kategori, dan urutkan arus kas rumah tangga secara akurat
           </p>
         </div>
 
@@ -111,10 +265,10 @@ export default function TransactionsPage() {
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition shadow-xs"
           >
             <Download className="w-4 h-4 text-slate-500" />
-            <span>Export Excel / CSV</span>
+            <span>Export CSV</span>
           </button>
           <button
             type="button"
@@ -127,30 +281,69 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari transaksi, kategori, atau catatan..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+      {/* Filter & Sort Toolbar */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
+        {/* Baris 1: Search Bar & Sort Dropdown */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Cari transaksi, kategori, atau catatan..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-9 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                title="Hapus pencarian"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Sort By Dropdown */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <ArrowUpDown className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <label htmlFor="sort-select" className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
+                Urutkan:
+              </label>
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="newest" className="dark:bg-slate-800">Transaksi Terbaru</option>
+                <option value="oldest" className="dark:bg-slate-800">Transaksi Terlama</option>
+                <option value="expense_highest" className="dark:bg-slate-800">Pengeluaran Tertinggi</option>
+                <option value="expense_lowest" className="dark:bg-slate-800">Pengeluaran Terendah</option>
+                <option value="income_highest" className="dark:bg-slate-800">Pemasukan Tertinggi</option>
+                <option value="income_lowest" className="dark:bg-slate-800">Pemasukan Terendah</option>
+                <option value="amount_highest" className="dark:bg-slate-800">Nominal Tertinggi (Semua)</option>
+                <option value="amount_lowest" className="dark:bg-slate-800">Nominal Terendah (Semua)</option>
+                <option value="category_asc" className="dark:bg-slate-800">Nama Kategori (A - Z)</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* Dropdowns / Filters */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Baris 2: Dropdowns Filter (Kategori, Tipe, Persona, Akun, Periode) */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80">
           {/* Persona Filter */}
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
             <button
               type="button"
               onClick={() => setSelectedPersona('all')}
-              className={`px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none transition ${
+              className={`px-2.5 py-1 rounded-lg text-xs transition ${
                 selectedPersona === 'all'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
                   : 'text-slate-600 dark:text-slate-300'
               }`}
             >
@@ -159,9 +352,9 @@ export default function TransactionsPage() {
             <button
               type="button"
               onClick={() => setSelectedPersona('suami')}
-              className={`px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none transition ${
+              className={`px-2.5 py-1 rounded-lg text-xs transition ${
                 selectedPersona === 'suami'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-xs font-bold'
                   : 'text-slate-600 dark:text-slate-300'
               }`}
             >
@@ -170,9 +363,9 @@ export default function TransactionsPage() {
             <button
               type="button"
               onClick={() => setSelectedPersona('istri')}
-              className={`px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:outline-none transition ${
+              className={`px-2.5 py-1 rounded-lg text-xs transition ${
                 selectedPersona === 'istri'
-                  ? 'bg-pink-600 text-white shadow-sm'
+                  ? 'bg-pink-600 text-white shadow-xs font-bold'
                   : 'text-slate-600 dark:text-slate-300'
               }`}
             >
@@ -180,11 +373,60 @@ export default function TransactionsPage() {
             </button>
           </div>
 
-          {/* Type Filter */}
+          {/* Filter Kategori */}
+          <div className="relative">
+            <select
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              aria-label="Filter berdasarkan kategori"
+              className={`pl-8 pr-3 py-1.5 text-xs font-medium rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
+                selectedCategoryId !== 'all'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold'
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              <option value="all">Semua Kategori</option>
+              {selectedType !== 'income' && (
+                <optgroup label="Pos Pengeluaran">
+                  {categories
+                    .filter((c) => c.type === 'expense')
+                    .map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                </optgroup>
+              )}
+              {selectedType !== 'expense' && (
+                <optgroup label="Pos Pemasukan">
+                  {categories
+                    .filter((c) => c.type === 'income')
+                    .map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                </optgroup>
+              )}
+            </select>
+            <Tag className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+
+          {/* Filter Tipe Transaksi */}
           <select
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            onChange={(e) => {
+              setSelectedType(e.target.value);
+              // Reset category jika kategori saat ini tidak cocok dengan tipe baru
+              if (selectedCategoryId !== 'all') {
+                const currentCat = categories.find((c) => c.id === selectedCategoryId);
+                if (currentCat && e.target.value !== 'all' && currentCat.type !== e.target.value) {
+                  setSelectedCategoryId('all');
+                }
+              }
+            }}
+            aria-label="Filter tipe transaksi"
+            className="px-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
           >
             <option value="all">Semua Tipe</option>
             <option value="expense">Pengeluaran</option>
@@ -192,46 +434,107 @@ export default function TransactionsPage() {
             <option value="transfer">Transfer Antar Rekening</option>
           </select>
 
-          {/* Account Filter */}
-          <select
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="all">Semua Rekening</option>
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.name}
-              </option>
-            ))}
-          </select>
+          {/* Filter Rekening */}
+          <div className="relative">
+            <select
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              aria-label="Filter berdasarkan rekening"
+              className="pl-7 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            >
+              <option value="all">Semua Rekening</option>
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                </option>
+              ))}
+            </select>
+            <Wallet className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
 
-          {(searchQuery || selectedType !== 'all' || selectedPersona !== 'all' || selectedAccountId !== 'all') && (
+          {/* Filter Periode Waktu */}
+          <div className="relative">
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              aria-label="Filter periode waktu"
+              className="pl-7 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            >
+              <option value="all">Semua Waktu</option>
+              <option value="this_month">Bulan Ini</option>
+              <option value="last_month">Bulan Lalu</option>
+              <option value="this_year">Tahun Ini</option>
+            </select>
+            <Calendar className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+
+          {/* Reset Filter Button */}
+          {hasActiveFilters && (
             <button
               type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedType('all');
-                setSelectedPersona('all');
-                setSelectedAccountId('all');
-              }}
-              className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline px-2 py-1.5 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded-lg"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800/60 transition"
+              title="Kembalikan semua filter ke awal"
             >
-              Reset Filter
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset Filter</span>
             </button>
           )}
         </div>
+
+        {/* Baris 3: Strip Ringkasan Hasil Filter */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span>Ditemukan:</span>
+            <span className="font-bold text-slate-900 dark:text-white">
+              {summaryMetrics.count} transaksi
+            </span>
+            {transactions.length !== summaryMetrics.count && (
+              <span className="text-[11px] text-slate-400">
+                (dari total {transactions.length})
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 font-semibold text-xs flex-wrap">
+            {summaryMetrics.income > 0 && (
+              <span className="text-emerald-600 dark:text-emerald-400">
+                Pemasukan: +{formatRupiah(summaryMetrics.income)}
+              </span>
+            )}
+            {summaryMetrics.expense > 0 && (
+              <span className="text-red-600 dark:text-red-400">
+                Pengeluaran: -{formatRupiah(summaryMetrics.expense)}
+              </span>
+            )}
+            <span className="text-slate-600 dark:text-slate-300 font-bold">
+              Arus Kas: {formatRupiah(summaryMetrics.net)}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Transactions Table / List */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-        {filteredTransactions.length === 0 ? (
-          <div className="text-center py-12 text-xs text-slate-400">
-            Tidak ada transaksi yang cocok dengan kriteria filter.
+      {/* Transactions List */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+        {sortedTransactions.length === 0 ? (
+          <div className="text-center py-12 space-y-2">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Tidak ada transaksi yang cocok dengan kriteria pencarian / filter ini.
+            </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset Semua Filter</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {filteredTransactions.map((tx) => {
+            {sortedTransactions.map((tx) => {
               const account = accounts.find((a) => a.id === tx.account_id);
               const destAccount = tx.destination_account_id
                 ? accounts.find((a) => a.id === tx.destination_account_id)
@@ -243,7 +546,7 @@ export default function TransactionsPage() {
               return (
                 <div
                   key={tx.id}
-                  className="py-3.5 flex items-center justify-between gap-3"
+                  className="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-1 rounded-xl transition-colors"
                 >
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     <div

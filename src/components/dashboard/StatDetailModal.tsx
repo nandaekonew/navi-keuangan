@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatRupiah, formatDateIndo } from '@/lib/utils';
@@ -11,16 +11,14 @@ import {
   TrendingDown,
   PiggyBank,
   ArrowRight,
-  ArrowDownLeft,
-  ArrowUpRight,
-  ArrowLeftRight,
   Plus,
   Landmark,
   CreditCard,
   Banknote,
-  Calendar,
-  CheckCircle2,
   ShieldCheck,
+  ArrowUpDown,
+  Tag,
+  RotateCcw,
 } from 'lucide-react';
 
 export type StatDetailType = 'balance' | 'income' | 'expense' | 'surplus';
@@ -39,6 +37,15 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
     setQuickInputOpen,
     setTransferOpen,
   } = useNaviStore();
+
+  const [modalCategoryFilter, setModalCategoryFilter] = useState<string>('all');
+  const [modalSort, setModalSort] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
+
+  // Reset filter dan sort lokal saat modal berganti tipe
+  useEffect(() => {
+    setModalCategoryFilter('all');
+    setModalSort('newest');
+  }, [type]);
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -75,16 +82,35 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
 
   // Breakdown Pemasukan per Kategori
   const incomeByCategory = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { id: string; name: string; amount: number }>();
     incomeTransactions.forEach((tx) => {
       const cat = categories.find((c) => c.id === tx.category_id);
-      const name = cat?.name || 'Pemasukan Lainnya';
-      map.set(name, (map.get(name) || 0) + tx.amount);
+      const catId = cat?.id || 'other';
+      const catName = cat?.name || 'Pemasukan Lainnya';
+      const existing = map.get(catId);
+      if (existing) {
+        existing.amount += tx.amount;
+      } else {
+        map.set(catId, { id: catId, name: catName, amount: tx.amount });
+      }
     });
-    return Array.from(map.entries())
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount);
+    return Array.from(map.values()).sort((a, b) => b.amount - a.amount);
   }, [incomeTransactions, categories]);
+
+  // Transaksi Pemasukan yang difilter dan diurutkan dalam modal
+  const filteredIncomeTransactions = useMemo(() => {
+    let list = incomeTransactions;
+    if (modalCategoryFilter !== 'all') {
+      list = list.filter((tx) => tx.category_id === modalCategoryFilter);
+    }
+    return [...list].sort((a, b) => {
+      if (modalSort === 'newest') return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+      if (modalSort === 'oldest') return new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime();
+      if (modalSort === 'highest') return b.amount - a.amount;
+      if (modalSort === 'lowest') return a.amount - b.amount;
+      return 0;
+    });
+  }, [incomeTransactions, modalCategoryFilter, modalSort]);
 
   // Transaksi Pengeluaran
   const expenseTransactions = useMemo(() => {
@@ -99,20 +125,40 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
 
   // Breakdown Pengeluaran per Kategori
   const expenseByCategory = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { id: string; name: string; amount: number }>();
     expenseTransactions.forEach((tx) => {
       const cat = categories.find((c) => c.id === tx.category_id);
-      const name = cat?.name || 'Pengeluaran Lainnya';
-      map.set(name, (map.get(name) || 0) + tx.amount);
+      const catId = cat?.id || 'other';
+      const catName = cat?.name || 'Pengeluaran Lainnya';
+      const existing = map.get(catId);
+      if (existing) {
+        existing.amount += tx.amount;
+      } else {
+        map.set(catId, { id: catId, name: catName, amount: tx.amount });
+      }
     });
-    return Array.from(map.entries())
-      .map(([name, amount]) => ({
-        name,
-        amount,
-        percentage: totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : '0',
+    return Array.from(map.values())
+      .map((item) => ({
+        ...item,
+        percentage: totalExpense > 0 ? ((item.amount / totalExpense) * 100).toFixed(1) : '0',
       }))
       .sort((a, b) => b.amount - a.amount);
   }, [expenseTransactions, categories, totalExpense]);
+
+  // Transaksi Pengeluaran yang difilter dan diurutkan dalam modal
+  const filteredExpenseTransactions = useMemo(() => {
+    let list = expenseTransactions;
+    if (modalCategoryFilter !== 'all') {
+      list = list.filter((tx) => tx.category_id === modalCategoryFilter);
+    }
+    return [...list].sort((a, b) => {
+      if (modalSort === 'newest') return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+      if (modalSort === 'oldest') return new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime();
+      if (modalSort === 'highest') return b.amount - a.amount;
+      if (modalSort === 'lowest') return a.amount - b.amount;
+      return 0;
+    });
+  }, [expenseTransactions, modalCategoryFilter, modalSort]);
 
   // Arus kas bersih (Surplus/Defisit)
   const netCashflow = totalIncome - totalExpense;
@@ -120,7 +166,6 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
 
   if (!type) return null;
 
-  // Render konten sesuai tipe kartu yang diklik
   return (
     <Modal
       isOpen={Boolean(type)}
@@ -257,7 +302,6 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
                 }}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
               >
-                <ArrowLeftRight className="w-3.5 h-3.5" />
                 <span>Transfer Antar Rekening</span>
               </button>
 
@@ -299,29 +343,103 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
               </div>
             </div>
 
-            {/* Breakdown per Kategori Pemasukan */}
+            {/* Breakdown per Kategori Pemasukan (Bisa diklik untuk filter cepat) */}
             {incomeByCategory.length > 0 && (
               <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block mb-2">
-                  Distribusi Kategori Pemasukan:
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {incomeByCategory.map((item) => (
-                    <div
-                      key={item.name}
-                      className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between"
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                    Distribusi Kategori Pemasukan (Klik kartu untuk filter):
+                  </span>
+                  {modalCategoryFilter !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setModalCategoryFilter('all')}
+                      className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
                     >
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                        {item.name}
-                      </span>
-                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0 pl-2">
-                        {formatRupiah(item.amount)}
-                      </span>
-                    </div>
-                  ))}
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Tampilkan Semua</span>
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {incomeByCategory.map((item) => {
+                    const isSelected = modalCategoryFilter === item.id;
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => setModalCategoryFilter(isSelected ? 'all' : item.id)}
+                        className={`text-left p-2.5 rounded-lg border transition-all ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-400'
+                            : 'bg-white dark:bg-slate-900 border-emerald-200/60 dark:border-emerald-800/60 hover:border-emerald-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                            {item.name}
+                          </span>
+                          <span className={`text-xs font-black shrink-0 pl-2 ${isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {formatRupiah(item.amount)}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
+
+            {/* Modal Mini Toolbar: Filter Kategori & Sort */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-2">
+                {/* Filter Kategori */}
+                <div className="relative">
+                  <select
+                    value={modalCategoryFilter}
+                    onChange={(e) => setModalCategoryFilter(e.target.value)}
+                    aria-label="Filter kategori pemasukan"
+                    className="pl-7 pr-3 py-1.5 text-xs font-medium rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="all">Semua Kategori</option>
+                    {categories
+                      .filter((c) => c.type === 'income')
+                      .map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                  </select>
+                  <Tag className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+
+                {modalCategoryFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setModalCategoryFilter('all')}
+                    className="text-xs text-rose-600 hover:underline font-semibold"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <ArrowUpDown className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <select
+                  value={modalSort}
+                  onChange={(e) => setModalSort(e.target.value as any)}
+                  aria-label="Urutkan pemasukan"
+                  className="bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none cursor-pointer pr-1"
+                >
+                  <option value="newest" className="dark:bg-slate-800">Transaksi Terbaru</option>
+                  <option value="oldest" className="dark:bg-slate-800">Transaksi Terlama</option>
+                  <option value="highest" className="dark:bg-slate-800">Pemasukan Tertinggi</option>
+                  <option value="lowest" className="dark:bg-slate-800">Pemasukan Terendah</option>
+                </select>
+              </div>
+            </div>
 
             {/* Structured Table */}
             <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
@@ -337,14 +455,14 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {incomeTransactions.length === 0 ? (
+                    {filteredIncomeTransactions.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
-                          Belum ada transaksi pemasukan yang dicatat pada bulan ini.
+                          Tidak ada transaksi pemasukan yang cocok dengan kriteria filter.
                         </td>
                       </tr>
                     ) : (
-                      incomeTransactions.map((tx) => {
+                      filteredIncomeTransactions.map((tx) => {
                         const account = accounts.find((a) => a.id === tx.account_id);
                         const category = categories.find((c) => c.id === tx.category_id);
                         const user = members.find((m) => m.id === tx.user_id);
@@ -452,34 +570,106 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
               </div>
             </div>
 
-            {/* Top Spending Categories Breakdown */}
+            {/* Top Spending Categories Breakdown (Bisa diklik untuk filter cepat) */}
             {expenseByCategory.length > 0 && (
               <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 block mb-2">
-                  Top Pos Pengeluaran Terbesar:
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {expenseByCategory.slice(0, 6).map((item) => (
-                    <div
-                      key={item.name}
-                      className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-rose-200/60 dark:border-rose-800/60"
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                    Top Pos Pengeluaran Terbesar (Klik kartu untuk filter):
+                  </span>
+                  {modalCategoryFilter !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setModalCategoryFilter('all')}
+                      className="text-[10px] font-bold text-rose-700 dark:text-rose-400 hover:underline inline-flex items-center gap-1"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                          {item.name}
-                        </span>
-                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                          {item.percentage}%
-                        </span>
-                      </div>
-                      <div className="text-xs font-black text-slate-900 dark:text-white">
-                        {formatRupiah(item.amount)}
-                      </div>
-                    </div>
-                  ))}
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Tampilkan Semua</span>
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {expenseByCategory.slice(0, 6).map((item) => {
+                    const isSelected = modalCategoryFilter === item.id;
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => setModalCategoryFilter(isSelected ? 'all' : item.id)}
+                        className={`text-left p-2.5 rounded-lg border transition-all ${
+                          isSelected
+                            ? 'bg-rose-600 text-white border-rose-700 shadow-sm ring-2 ring-rose-400'
+                            : 'bg-white dark:bg-slate-900 border-rose-200/60 dark:border-rose-800/60 hover:border-rose-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                            {item.name}
+                          </span>
+                          <span className={`text-[10px] font-bold ${isSelected ? 'text-white' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {item.percentage}%
+                          </span>
+                        </div>
+                        <div className={`text-xs font-black ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                          {formatRupiah(item.amount)}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
+
+            {/* Modal Mini Toolbar: Filter Kategori & Sort */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-2">
+                {/* Filter Kategori */}
+                <div className="relative">
+                  <select
+                    value={modalCategoryFilter}
+                    onChange={(e) => setModalCategoryFilter(e.target.value)}
+                    aria-label="Filter kategori pengeluaran"
+                    className="pl-7 pr-3 py-1.5 text-xs font-medium rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
+                  >
+                    <option value="all">Semua Kategori</option>
+                    {categories
+                      .filter((c) => c.type === 'expense')
+                      .map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                  </select>
+                  <Tag className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+
+                {modalCategoryFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setModalCategoryFilter('all')}
+                    className="text-xs text-rose-600 hover:underline font-semibold"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <ArrowUpDown className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <select
+                  value={modalSort}
+                  onChange={(e) => setModalSort(e.target.value as any)}
+                  aria-label="Urutkan pengeluaran"
+                  className="bg-transparent text-xs font-bold text-slate-900 dark:text-white focus:outline-none cursor-pointer pr-1"
+                >
+                  <option value="newest" className="dark:bg-slate-800">Transaksi Terbaru</option>
+                  <option value="oldest" className="dark:bg-slate-800">Transaksi Terlama</option>
+                  <option value="highest" className="dark:bg-slate-800">Pengeluaran Tertinggi</option>
+                  <option value="lowest" className="dark:bg-slate-800">Pengeluaran Terendah</option>
+                </select>
+              </div>
+            </div>
 
             {/* Structured Table */}
             <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
@@ -495,14 +685,14 @@ export function StatDetailModal({ type, onClose }: StatDetailModalProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {expenseTransactions.length === 0 ? (
+                    {filteredExpenseTransactions.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
-                          Belum ada transaksi pengeluaran yang dicatat pada bulan ini.
+                          Tidak ada transaksi pengeluaran yang cocok dengan kriteria filter.
                         </td>
                       </tr>
                     ) : (
-                      expenseTransactions.map((tx) => {
+                      filteredExpenseTransactions.map((tx) => {
                         const account = accounts.find((a) => a.id === tx.account_id);
                         const category = categories.find((c) => c.id === tx.category_id);
                         const user = members.find((m) => m.id === tx.user_id);
