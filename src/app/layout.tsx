@@ -1,13 +1,22 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { PWAProvider } from '@/components/pwa/PWAProvider';
 
 export const metadata: Metadata = {
   title: 'Aplikasi Management Keuangan Navi - Multi-User Rumah Tangga',
   description:
     'Aplikasi pengatur keuangan keluarga modern & ringan. Sinkronisasi real-time multi-user untuk HP Suami & Istri, quick input transaksi, budgeting guard, dan checklist tagihan rutin.',
+  applicationName: 'Navi Keuangan',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon-192.png',
+    shortcut: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Navi Keuangan',
   },
 };
 
@@ -33,9 +42,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
-        {children}
+        <PWAProvider>{children}</PWAProvider>
       </body>
     </html>
   );

@@ -283,11 +283,13 @@ interface NaviStoreState {
   // UI States
   isQuickInputOpen: boolean;
   isTransferOpen: boolean;
+  isMobileDrawerOpen: boolean;
   isSupabaseActive: boolean;
 
   // Actions
   setQuickInputOpen: (open: boolean) => void;
   setTransferOpen: (open: boolean) => void;
+  setMobileDrawerOpen: (open: boolean) => void;
   switchPersona: (persona: UserPersona) => void;
   setCurrentUser: (user: UserProfile) => void;
   setHouseholdName: (name: string) => void;
@@ -346,10 +348,12 @@ export const useNaviStore = create<NaviStoreState>()(
       installments: initialInstallments,
       isQuickInputOpen: false,
       isTransferOpen: false,
+      isMobileDrawerOpen: false,
       isSupabaseActive: isSupabaseConfigured(),
 
       setQuickInputOpen: (open) => set({ isQuickInputOpen: open }),
       setTransferOpen: (open) => set({ isTransferOpen: open }),
+      setMobileDrawerOpen: (open) => set({ isMobileDrawerOpen: open }),
 
       switchPersona: (persona: UserPersona) => {
         const { members, currentUser } = get();

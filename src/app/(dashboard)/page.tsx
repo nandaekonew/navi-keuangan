@@ -60,7 +60,7 @@ export default function DashboardOverviewPage() {
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 shadow-md focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none transition"
           >
             <Plus className="w-4 h-4 text-emerald-600" />
-            <span>+ Catat Transaksi</span>
+            <span>Catat Transaksi</span>
           </button>
         </div>
       </div>
