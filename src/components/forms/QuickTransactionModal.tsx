@@ -6,10 +6,9 @@ import { useNaviStore } from '@/lib/store/useNaviStore';
 import { formatRupiah, parseRupiahInput } from '@/lib/utils';
 import { resolveCategoryIcon } from '@/lib/categoryIcons';
 import { TransactionType } from '@/types';
+import { ReceiptScannerSection } from '@/components/forms/ReceiptScannerSection';
+import { CandidateAmount } from '@/lib/receiptScanner';
 import {
-  Camera,
-  X,
-  Tag,
   ArrowDownLeft,
   ArrowUpRight,
 } from 'lucide-react';
@@ -62,15 +61,52 @@ export function QuickTransactionModal() {
     setInputStr('');
   };
 
-  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReceiptPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  // Handler hasil scan nota otomatis (OCR)
+  const handleScanSuccess = (
+    data: {
+      amount: number | null;
+      merchant: string | null;
+      date: string | null;
+      categoryKeyword: string | null;
+      candidateAmounts: CandidateAmount[];
+    },
+    imageDataUrl: string
+  ) => {
+    setReceiptPreview(imageDataUrl);
+
+    // 1. Auto-fill nominal jika ditemukan
+    if (data.amount && data.amount > 0) {
+      setNominal(data.amount);
+      setInputStr(data.amount.toLocaleString('id-ID'));
     }
+
+    // 2. Auto-fill deskripsi jika ada nama toko dan keterangan masih kosong
+    if (data.merchant && !description) {
+      setDescription(`Belanja di ${data.merchant}`);
+    }
+
+    // 3. Auto-fill tanggal jika terdeteksi dari nota
+    if (data.date) {
+      setDate(data.date);
+    }
+
+    // 4. Auto-select kategori jika ada kata kunci yang cocok
+    if (data.categoryKeyword) {
+      const matched = categories.find((c) =>
+        c.name.toLowerCase().includes(data.categoryKeyword!.toLowerCase())
+      );
+      if (matched) {
+        setSelectedCategoryId(matched.id);
+        if (matched.type !== type) {
+          setType(matched.type);
+        }
+      }
+    }
+  };
+
+  const handleSelectCandidateAmount = (amount: number) => {
+    setNominal(amount);
+    setInputStr(amount.toLocaleString('id-ID'));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -133,6 +169,14 @@ export function QuickTransactionModal() {
           </button>
         </div>
 
+        {/* Fitur OCR Scan Nota / Ambil Gambar Nota Otomatis */}
+        <ReceiptScannerSection
+          receiptPreview={receiptPreview}
+          onScanSuccess={handleScanSuccess}
+          onImageClear={() => setReceiptPreview(null)}
+          onSelectCandidateAmount={handleSelectCandidateAmount}
+        />
+
         {/* Big Nominal Input */}
         <div>
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
@@ -148,7 +192,7 @@ export function QuickTransactionModal() {
               placeholder="0"
               value={inputStr}
               onChange={handleNominalChange}
-              autoFocus
+              autoFocus={!receiptPreview}
               className="w-full pl-12 pr-4 py-3 text-2xl font-black rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
             />
           </div>
@@ -259,43 +303,6 @@ export function QuickTransactionModal() {
               className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
-        </div>
-
-        {/* Upload Foto Struk */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Foto Struk / Bukti Transfer (Opsional)
-          </label>
-          {receiptPreview ? (
-            <div className="relative inline-block border rounded-xl overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={receiptPreview}
-                alt="Bukti Transaksi"
-                className="w-24 h-24 object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setReceiptPreview(null)}
-                aria-label="Hapus foto bukti"
-                className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none transition"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ) : (
-            <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition text-xs text-slate-600 dark:text-slate-400">
-              <Camera className="w-4 h-4 text-emerald-600" />
-              <span>Foto Struk / Pilih Gambar dari Galeri</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleReceiptUpload}
-                className="hidden"
-              />
-            </label>
-          )}
         </div>
 
         {/* Submit Button */}

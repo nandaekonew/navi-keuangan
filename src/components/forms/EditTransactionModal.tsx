@@ -6,12 +6,9 @@ import { useNaviStore } from '@/lib/store/useNaviStore';
 import { Transaction, TransactionType } from '@/types';
 import { formatRupiah, parseRupiahInput } from '@/lib/utils';
 import { resolveCategoryIcon } from '@/lib/categoryIcons';
+import { ReceiptScannerSection } from '@/components/forms/ReceiptScannerSection';
+import { CandidateAmount } from '@/lib/receiptScanner';
 import {
-  Camera,
-  X,
-  Tag,
-  CreditCard,
-  Calendar,
   ArrowDownLeft,
   ArrowUpRight,
   ArrowLeftRight,
@@ -77,15 +74,47 @@ export function EditTransactionModal({
     setInputStr(newTotal.toLocaleString('id-ID'));
   };
 
-  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReceiptPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleScanSuccess = (
+    data: {
+      amount: number | null;
+      merchant: string | null;
+      date: string | null;
+      categoryKeyword: string | null;
+      candidateAmounts: CandidateAmount[];
+    },
+    imageDataUrl: string
+  ) => {
+    setReceiptPreview(imageDataUrl);
+
+    if (data.amount && data.amount > 0) {
+      setNominal(data.amount);
+      setInputStr(data.amount.toLocaleString('id-ID'));
     }
+
+    if (data.merchant && !description) {
+      setDescription(`Belanja di ${data.merchant}`);
+    }
+
+    if (data.date) {
+      setDate(data.date);
+    }
+
+    if (data.categoryKeyword) {
+      const matched = categories.find((c) =>
+        c.name.toLowerCase().includes(data.categoryKeyword!.toLowerCase())
+      );
+      if (matched) {
+        setSelectedCategoryId(matched.id);
+        if (matched.type !== type && type !== 'transfer') {
+          setType(matched.type);
+        }
+      }
+    }
+  };
+
+  const handleSelectCandidateAmount = (amount: number) => {
+    setNominal(amount);
+    setInputStr(amount.toLocaleString('id-ID'));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,19 +144,19 @@ export function EditTransactionModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Ubah Transaksi"
-      subtitle="Perbarui data nominal, kategori, rekening, atau catatan transaksi"
+      title="Ubah Rincian Transaksi"
+      subtitle="Perbarui nominal, kategori, akun, atau foto struk transaksi"
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Type Switcher */}
-        <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+        {/* Tipe Transaksi */}
+        <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
           <button
             type="button"
             onClick={() => setType('expense')}
-            className={`py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+            className={`py-2 px-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition ${
               type === 'expense'
-                ? 'bg-red-500 text-white shadow-sm'
+                ? 'bg-red-500 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
@@ -137,9 +166,9 @@ export function EditTransactionModal({
           <button
             type="button"
             onClick={() => setType('income')}
-            className={`py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+            className={`py-2 px-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition ${
               type === 'income'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-500 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
@@ -149,9 +178,9 @@ export function EditTransactionModal({
           <button
             type="button"
             onClick={() => setType('transfer')}
-            className={`py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+            className={`py-2 px-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition ${
               type === 'transfer'
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
@@ -160,13 +189,21 @@ export function EditTransactionModal({
           </button>
         </div>
 
-        {/* Amount Input */}
+        {/* Scan Nota Otomatis */}
+        <ReceiptScannerSection
+          receiptPreview={receiptPreview}
+          onScanSuccess={handleScanSuccess}
+          onImageClear={() => setReceiptPreview(null)}
+          onSelectCandidateAmount={handleSelectCandidateAmount}
+        />
+
+        {/* Nominal Input */}
         <div>
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Nominal Transaksi (Rp) <span className="text-red-500">*</span>
+            Nominal Transaksi (Rp)
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-black text-slate-400">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
               Rp
             </span>
             <input
@@ -175,73 +212,66 @@ export function EditTransactionModal({
               placeholder="0"
               value={inputStr}
               onChange={handleNominalChange}
-              required
-              className="w-full pl-11 pr-4 py-2.5 text-xl font-black rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-12 pr-4 py-2.5 text-xl font-black rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
             />
           </div>
+        </div>
 
-          {/* Quick presets */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {[10000, 20000, 50000, 100000, 500000].map((val) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => addPreset(val)}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
-              >
-                +{val >= 1000 ? `${val / 1000}rb` : val}
-              </button>
-            ))}
+        {/* Quick Presets */}
+        <div className="flex flex-wrap gap-1.5">
+          {[10000, 25000, 50000, 100000, 200000].map((amt) => (
             <button
+              key={amt}
               type="button"
-              onClick={() => {
-                setNominal(0);
-                setInputStr('');
-              }}
-              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
+              onClick={() => addPreset(amt)}
+              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition"
             >
-              Reset
+              +{amt >= 1000 ? `${amt / 1000}rb` : amt}
             </button>
+          ))}
+        </div>
+
+        {/* User / Persona Selector */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+            Dicatat Oleh (Persona)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {members.map((m) => {
+              const isSelected = selectedUserId === m.id;
+              const isSuami = m.persona === 'suami';
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setSelectedUserId(m.id)}
+                  className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition ${
+                    isSelected
+                      ? isSuami
+                        ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-900 dark:text-blue-200'
+                        : 'bg-pink-50 dark:bg-pink-950/40 border-pink-500 text-pink-900 dark:text-pink-200'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${
+                      isSuami ? 'bg-blue-600 text-white' : 'bg-pink-600 text-white'
+                    }`}
+                  >
+                    {isSuami ? 'S' : 'I'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold block truncate">{m.full_name}</span>
+                    <span className="text-[10px] text-slate-400 capitalize">{m.persona}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Date and Persona */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              Tanggal Transaksi
-            </label>
-            <div className="relative">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              Dicatat Oleh
-            </label>
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.persona === 'suami' ? '[Suami] ' : '[Istri] '}{m.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Rekening Sumber & Rekening Tujuan (jika Transfer) */}
-        <div className={type === 'transfer' ? 'grid grid-cols-2 gap-2' : ''}>
+        {/* Rekening Sumber & Rekening Tujuan (Jika Transfer) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
               {type === 'transfer' ? 'Rekening Sumber' : 'Rekening / Dompet'}
@@ -299,7 +329,7 @@ export function EditTransactionModal({
                     onClick={() => setSelectedCategoryId(cat.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
                       isSelected
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-transparent hover:bg-slate-200'
                     }`}
                   >
@@ -312,56 +342,31 @@ export function EditTransactionModal({
           </div>
         )}
 
-        {/* Description / Notes */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Catatan / Keterangan (Opsional)
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. Belanja sayur di pasar, Bayar tagihan wifi"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
-
-        {/* Receipt Upload / Preview */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Foto Bukti Struk / Struk Belanja
-          </label>
-          {receiptPreview ? (
-            <div className="relative inline-block border rounded-xl overflow-hidden shadow-sm">
-              <img
-                src={receiptPreview}
-                alt="Receipt preview"
-                className="w-28 h-28 object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setReceiptPreview(null)}
-                className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
-                title="Hapus foto"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-              <Camera className="w-4 h-4 text-slate-400" />
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                Upload atau foto struk baru
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleReceiptUpload}
-                className="hidden"
-              />
+        {/* Catatan Singkat & Tanggal */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Catatan / Keterangan (Opsional)
             </label>
-          )}
+            <input
+              type="text"
+              placeholder="e.g. Belanja sayur di pasar, Bayar tagihan wifi"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Tanggal
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
         </div>
 
         {/* Submit Button */}
