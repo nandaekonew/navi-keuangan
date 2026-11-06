@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNaviStore } from '@/lib/store/useNaviStore';
 import { UserPersona } from '@/types';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import {
+  getQwenVLConfig,
+  saveQwenVLConfig,
+  QwenVLConfig,
+} from '@/lib/receiptScanner';
 import {
   Settings,
   Users,
@@ -18,6 +23,14 @@ import {
   Trash2,
   User,
   UserCheck,
+  Bot,
+  Sparkles,
+  ExternalLink,
+  Key,
+  Server,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -40,6 +53,23 @@ export default function SettingsPage() {
   const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState<string>('');
+
+  // Qwen2-VL Configuration State
+  const [qwenForm, setQwenForm] = useState<QwenVLConfig>({
+    provider: 'openrouter',
+    apiKey: '',
+    customEndpoint: '',
+    model: 'qwen/qwen-2-vl-7b-instruct',
+    enabled: true,
+  });
+  const [isTestingQwen, setIsTestingQwen] = useState(false);
+  const [qwenTestMessage, setQwenTestMessage] = useState<string | null>(null);
+  const [qwenTestSuccess, setQwenTestSuccess] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const cfg = getQwenVLConfig();
+    setQwenForm(cfg);
+  }, []);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(household.invite_code);
@@ -69,6 +99,48 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveQwenConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveQwenVLConfig(qwenForm);
+    alert('Pengaturan Qwen2-VL berhasil disimpan!');
+  };
+
+  const handleTestQwen = async () => {
+    setIsTestingQwen(true);
+    setQwenTestMessage(null);
+    setQwenTestSuccess(null);
+
+    try {
+      // 1x1 test image
+      const test1x1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAAElFTkSuQmCC';
+      const res = await fetch('/api/ocr/qwen-vl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: test1x1,
+          apiKey: qwenForm.apiKey,
+          provider: qwenForm.provider,
+          customEndpoint: qwenForm.customEndpoint,
+          model: qwenForm.model,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setQwenTestSuccess(true);
+        setQwenTestMessage('Koneksi endpoint Qwen2-VL berhasil terverifikasi!');
+      } else {
+        setQwenTestSuccess(false);
+        setQwenTestMessage(data.message || 'Gagal memverifikasi endpoint Qwen2-VL.');
+      }
+    } catch (err: any) {
+      setQwenTestSuccess(false);
+      setQwenTestMessage(`Gagal menghubungi server: ${err.message}`);
+    } finally {
+      setIsTestingQwen(false);
+    }
+  };
+
   const hasSupabase = isSupabaseConfigured();
 
   return (
@@ -78,7 +150,7 @@ export default function SettingsPage() {
           Pengaturan Rumah Tangga & Multi-User
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Kelola sinkronisasi multi-device HP Suami & Istri dan koneksi Supabase
+          Kelola sinkronisasi multi-device HP Suami & Istri, model OCR Qwen2-VL, dan koneksi Supabase
         </p>
       </div>
 
@@ -98,200 +170,55 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSaveHouseholdName} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
-              Nama Rumah Tangga / Keluarga
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 transition"
-              >
-                Simpan
-              </button>
-            </div>
-          </div>
+        <form onSubmit={handleSaveHouseholdName} className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm"
+          >
+            Simpan Nama
+          </button>
         </form>
 
-        {/* Invite Code Box */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 block">
-              Kode Undangan Pasangan (Invite Code)
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-1">
+              Kode Undangan Pasangan (Multi-User HP)
             </span>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-              Bagikan kode ini kepada Suami atau Istri untuk menghubungkan HP ke akun ini.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-base font-black px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm">
+            <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-widest">
               {household.invite_code}
-            </span>
-            <button
-              onClick={handleCopyCode}
-              className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
-              title="Salin Kode Undangan"
-            >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Member List */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Daftar Anggota Rumah Tangga ({members.length})
-            </h2>
-            <p className="text-[11px] text-slate-500">
-              Anggota keluarga yang terhubung dalam workspace ini
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-md">
+              Buka aplikasi ini di HP pasangan Anda, pilih &quot;Gabung Rumah Tangga&quot; di pengaturan, lalu masukkan kode ini untuk sinkronisasi otomatis.
             </p>
           </div>
-        </div>
 
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {members.map((member) => {
-            const isCurrent = member.id === currentUser.id;
-            const isSuami = member.persona === 'suami';
-            const initials = member.full_name
-              ? member.full_name
-                  .trim()
-                  .split(/\s+/)
-                  .filter(Boolean)
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join('')
-                  .toUpperCase()
-              : isSuami ? 'S' : 'I';
-
-            return (
-              <div key={member.id} className="py-3.5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shrink-0 border select-none transition-all ${
-                      isSuami
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60'
-                        : 'bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 border-pink-200/80 dark:border-pink-900/60'
-                    }`}
-                  >
-                    <span className="tracking-wider">{initials}</span>
-                  </div>
-
-                  <div className="min-w-0">
-                    {editingMemberId === member.id ? (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <input
-                          type="text"
-                          value={editingNameValue}
-                          onChange={(e) => setEditingNameValue(e.target.value)}
-                          className="px-2.5 py-1 text-xs font-bold rounded-xl border border-emerald-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none ring-1 ring-emerald-500"
-                          autoFocus
-                          placeholder="Masukkan nama..."
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (editingNameValue.trim()) {
-                              updateMemberName(member.id, editingNameValue.trim());
-                            }
-                            setEditingMemberId(null);
-                          }}
-                          className="px-2.5 py-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition"
-                        >
-                          Simpan
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingMemberId(null)}
-                          className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                        >
-                          Batal
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {member.full_name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingMemberId(member.id);
-                            setEditingNameValue(member.full_name);
-                          }}
-                          title="Ubah Nama"
-                          aria-label="Ubah nama anggota"
-                          className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        {isCurrent && (
-                          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Sedang Aktif di HP ini
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
-                      <span className={`font-semibold ${isSuami ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                        Peran: {isSuami ? 'Suami' : 'Istri'}
-                      </span>
-                      <span>•</span>
-                      <span>Akses: {member.role === 'admin' ? 'Admin' : 'Member'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  {!isCurrent && (
-                    <button
-                      type="button"
-                      onClick={() => switchPersona(member.persona)}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition shadow-xs"
-                    >
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Ganti ke Profil Ini</span>
-                      <span className="sm:hidden">Ganti Profil</span>
-                    </button>
-                  )}
-
-                  {members.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm(`Yakin ingin menghapus anggota "${member.full_name}" dari rumah tangga?`)) {
-                          deleteMember(member.id);
-                        }
-                      }}
-                      title="Hapus Anggota"
-                      aria-label="Hapus anggota"
-                      className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition shrink-0"
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Kode Tersalin!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                <span>Salin Kode Undangan</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Join Another Household Form */}
+      {/* Profil Persona Aktif & Ganti Peran */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600">
@@ -299,67 +226,242 @@ export default function SettingsPage() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Gabung ke Rumah Tangga Lain (Pairing HP Pasangan)
+              Peran Aktif di HP Ini
             </h2>
             <p className="text-[11px] text-slate-500">
-              Masukkan kode undangan dari aplikasi pasangan Anda
+              Pilih identitas Anda agar setiap transaksi otomatis diatribusikan ke Suami atau Istri
             </p>
           </div>
         </div>
 
-        {joinSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold">
-            {joinSuccess}
-          </div>
-        )}
-
-        <form onSubmit={handleJoin} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="sm:col-span-1">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
-                Kode Undangan
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. NAVI-7821"
-                value={inviteInput}
-                onChange={(e) => setInviteInput(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-mono font-bold uppercase rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-              />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => switchPersona('suami')}
+            className={`p-4 rounded-2xl border text-left flex items-center justify-between transition ${
+              currentUser.persona === 'suami'
+                ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/30'
+                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-black shadow-sm">
+                S
+              </div>
+              <div>
+                <span className="text-xs font-bold block">Profil Suami (Admin)</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {members.find((m) => m.persona === 'suami')?.full_name || 'Nanda Eko Widianto'}
+                </span>
+              </div>
             </div>
-            <div className="sm:col-span-1">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
-                Nama Anda di HP ini
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Dina (Istri)"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-              />
-            </div>
-            <div className="sm:col-span-1">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
-                Peran
-              </label>
-              <select
-                value={joinPersona}
-                onChange={(e) => setJoinPersona(e.target.value as UserPersona)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-              >
-                <option value="istri">Istri</option>
-                <option value="suami">Suami</option>
-              </select>
-            </div>
-          </div>
+            {currentUser.persona === 'suami' && (
+              <Check className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            )}
+          </button>
 
           <button
-            type="submit"
-            className="px-4 py-2.5 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
+            type="button"
+            onClick={() => switchPersona('istri')}
+            className={`p-4 rounded-2xl border text-left flex items-center justify-between transition ${
+              currentUser.persona === 'istri'
+                ? 'border-pink-500 bg-pink-50/60 dark:bg-pink-950/40 text-pink-900 dark:text-pink-100 ring-2 ring-pink-500/30'
+                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+            }`}
           >
-            Hubungkan Workspace Rumah Tangga
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-pink-600 text-white flex items-center justify-center text-sm font-black shadow-sm">
+                I
+              </div>
+              <div>
+                <span className="text-xs font-bold block">Profil Istri (Member)</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {members.find((m) => m.persona === 'istri')?.full_name || 'Devi Asmarani'}
+                </span>
+              </div>
+            </div>
+            {currentUser.persona === 'istri' && (
+              <Check className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+            )}
           </button>
+        </div>
+      </div>
+
+      {/* ===================== INTEGRASI QWEN2-VL VISION AI ===================== */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Integrasi Vision AI: Qwen2-VL (Alibaba Cloud)
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                  Multimodal OCR
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Identifikasi teks struk belanja otomatis berbasis model open-source Qwen2-VL
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="https://github.com/QwenLM/Qwen2-VL"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
+          >
+            <span>GitHub QwenLM/Qwen2-VL</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-1.5 leading-relaxed">
+          <p className="font-semibold text-slate-900 dark:text-white">
+            Tentang Qwen2-VL (<a href="https://github.com/QwenLM/Qwen2-VL" target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline">QwenLM/Qwen2-VL</a>):
+          </p>
+          <p className="text-[11px]">
+            Qwen2-VL adalah model Vision-Language unggulan dari Alibaba Cloud yang memiliki kemampuan membaca nota dan dokumen visual dengan akurasi sangat tinggi. Model ini mampu mengenali nominal total, subtotal, tanggal, rincian barang, dan nama toko bahkan pada struk thermal yang kusut atau pudar.
+          </p>
+        </div>
+
+        <form onSubmit={handleSaveQwenConfig} className="space-y-3.5 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Provider Selector */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Penyedia / Endpoint Provider
+              </label>
+              <select
+                value={qwenForm.provider}
+                onChange={(e) => {
+                  const p = e.target.value as any;
+                  setQwenForm({
+                    ...qwenForm,
+                    provider: p,
+                    model:
+                      p === 'openrouter'
+                        ? 'qwen/qwen-2-vl-7b-instruct'
+                        : p === 'siliconflow'
+                        ? 'Qwen/Qwen2-VL-7B-Instruct'
+                        : p === 'dashscope'
+                        ? 'qwen2-vl-7b-instruct'
+                        : qwenForm.model,
+                  });
+                }}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="openrouter">OpenRouter (qwen-2-vl-7b / 72b)</option>
+                <option value="siliconflow">SiliconFlow (Qwen2-VL-7B-Instruct)</option>
+                <option value="dashscope">Alibaba Cloud DashScope (Official)</option>
+                <option value="custom">Server Lokal Sendiri (vLLM / Ollama)</option>
+              </select>
+            </div>
+
+            {/* Model Name */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Model Tag
+              </label>
+              <input
+                type="text"
+                value={qwenForm.model || ''}
+                onChange={(e) => setQwenForm({ ...qwenForm, model: e.target.value })}
+                placeholder="qwen/qwen-2-vl-7b-instruct"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Custom Endpoint URL (Jika memilih custom server) */}
+          {qwenForm.provider === 'custom' && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                URL Endpoint Server Lokal / vLLM
+              </label>
+              <input
+                type="text"
+                value={qwenForm.customEndpoint || ''}
+                onChange={(e) => setQwenForm({ ...qwenForm, customEndpoint: e.target.value })}
+                placeholder="http://localhost:8000/v1"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">
+                Petunjuk: Jalankan dari repo QwenLM/Qwen2-VL menggunakan vLLM: <code>python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-VL-7B-Instruct</code>
+              </span>
+            </div>
+          )}
+
+          {/* API Key */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              API Key ({qwenForm.provider})
+            </label>
+            <div className="relative">
+              <input
+                type="password"
+                value={qwenForm.apiKey || ''}
+                onChange={(e) => setQwenForm({ ...qwenForm, apiKey: e.target.value })}
+                placeholder="sk-..."
+                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <Key className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+            <span className="text-[10px] text-slate-400 mt-1 block">
+              Disimpan aman di penyimpanan lokal peramban Anda untuk melakukan OCR nota via Qwen2-VL.
+            </span>
+          </div>
+
+          {/* Status Hasil Tes Koneksi */}
+          {qwenTestMessage && (
+            <div
+              className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
+                qwenTestSuccess
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-800 dark:text-rose-300'
+              }`}
+            >
+              {qwenTestSuccess ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              )}
+              <span>{qwenTestMessage}</span>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm"
+            >
+              Simpan Pengaturan Qwen2-VL
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTestQwen}
+              disabled={isTestingQwen}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+            >
+              {isTestingQwen ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Menguji Koneksi...</span>
+                </>
+              ) : (
+                <>
+                  <Server className="w-3.5 h-3.5" />
+                  <span>Uji Koneksi Endpoint</span>
+                </>
+              )}
+            </button>
+          </div>
         </form>
       </div>
 

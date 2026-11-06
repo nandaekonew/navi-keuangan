@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Camera,
   Upload,
@@ -12,11 +13,15 @@ import {
   RefreshCw,
   Tag,
   Calendar,
+  ExternalLink,
+  Bot,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   scanReceipt,
   ReceiptScanResult,
   CandidateAmount,
+  getQwenVLConfig,
 } from '@/lib/receiptScanner';
 import { formatRupiah } from '@/lib/utils';
 
@@ -28,6 +33,7 @@ interface ReceiptScannerSectionProps {
     date: string | null;
     categoryKeyword: string | null;
     candidateAmounts: CandidateAmount[];
+    items?: { name: string; qty?: number; price?: number }[];
   }, imageDataUrl: string) => void;
   onImageClear: () => void;
   onSelectCandidateAmount?: (amount: number) => void;
@@ -44,6 +50,7 @@ export function ReceiptScannerSection({
   const [scanStatus, setScanStatus] = useState('');
   const [scanResult, setScanResult] = useState<ReceiptScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedEngine, setSelectedEngine] = useState<'auto' | 'qwen-vl' | 'tesseract'>('auto');
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -61,10 +68,14 @@ export function ReceiptScannerSection({
       const dataUrl = reader.result as string;
 
       try {
-        const result = await scanReceipt(dataUrl, (pct, statusText) => {
-          setScanProgress(pct);
-          setScanStatus(statusText);
-        });
+        const result = await scanReceipt(
+          dataUrl,
+          (pct, statusText) => {
+            setScanProgress(pct);
+            setScanStatus(statusText);
+          },
+          selectedEngine
+        );
 
         setScanResult(result);
         setIsScanning(false);
@@ -77,6 +88,7 @@ export function ReceiptScannerSection({
             date: result.detectedDate,
             categoryKeyword: result.suggestedCategoryKeyword,
             candidateAmounts: result.candidateAmounts,
+            items: result.items,
           },
           dataUrl
         );
@@ -84,11 +96,12 @@ export function ReceiptScannerSection({
         if (!result.totalAmount) {
           setErrorMessage('Nominal total tidak terdeteksi otomatis. Silakan periksa atau masukkan nominal manual.');
         }
-      } catch (err) {
-        console.error('OCR Error:', err);
+      } catch (err: any) {
+        console.error('OCR / Qwen2-VL Error:', err);
         setIsScanning(false);
-        setErrorMessage('Gagal memproses struk otomatis. Silakan masukkan nominal manual.');
-        // Tetap simpan foto struk sebagai lampiran bukti
+        setErrorMessage(
+          err?.message || 'Gagal memproses struk otomatis. Silakan masukkan nominal manual.'
+        );
         onScanSuccess(
           {
             amount: null,
@@ -115,7 +128,6 @@ export function ReceiptScannerSection({
     if (file) {
       processFile(file);
     }
-    // Reset target value agar bisa trigger jika file yang sama dipilih lagi
     e.target.value = '';
   };
 
@@ -128,20 +140,62 @@ export function ReceiptScannerSection({
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+      {/* Header Bagian Scan dengan Referensi Qwen2-VL */}
+      <div className="flex items-center justify-between flex-wrap gap-1">
+        <div className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Scan Nota / Struk Otomatis (OCR)</span>
-        </label>
-        <span className="text-[11px] text-slate-400">
-          Deteksi nominal otomatis
-        </span>
+          <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            Scan Nota Otomatis (Vision AI)
+          </label>
+        </div>
+
+        {/* Link Referensi GitHub Repository QwenLM/Qwen2-VL */}
+        <a
+          href="https://github.com/QwenLM/Qwen2-VL"
+          target="_blank"
+          rel="noreferrer"
+          title="Buka repositori resmi GitHub QwenLM/Qwen2-VL"
+          className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800"
+        >
+          <Bot className="w-3 h-3 text-emerald-600" />
+          <span>QwenLM/Qwen2-VL</span>
+          <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+        </a>
+      </div>
+
+      {/* Pilihan Engine AI (Qwen2-VL vs Offline) */}
+      <div className="flex items-center justify-between text-[11px] bg-slate-100/80 dark:bg-slate-800/60 p-1 rounded-xl">
+        <span className="text-slate-500 font-semibold px-2">Mesin Analisis:</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setSelectedEngine('auto')}
+            className={`px-2.5 py-0.5 rounded-lg font-bold transition text-[11px] ${
+              selectedEngine === 'auto'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            Qwen2-VL (Smart)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedEngine('tesseract')}
+            className={`px-2 py-0.5 rounded-lg font-bold transition text-[11px] ${
+              selectedEngine === 'tesseract'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            Tesseract (Offline)
+          </button>
+        </div>
       </div>
 
       {/* Jika belum ada foto struk */}
       {!receiptPreview && !isScanning && (
         <div className="grid grid-cols-2 gap-2">
-          {/* Tombol Buka Kamera Langsung (Khusus HP / Device berkamera) */}
+          {/* Tombol Kamera Langsung */}
           <button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
@@ -159,7 +213,7 @@ export function ReceiptScannerSection({
             className="hidden"
           />
 
-          {/* Tombol Pilih dari Galeri / File Manager */}
+          {/* Tombol Pilih dari Galeri */}
           <button
             type="button"
             onClick={() => galleryInputRef.current?.click()}
@@ -191,7 +245,6 @@ export function ReceiptScannerSection({
             </span>
           </div>
 
-          {/* Progress Bar Animasi */}
           <div className="w-full bg-emerald-100 dark:bg-emerald-900/40 h-2 rounded-full overflow-hidden">
             <div
               className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300 rounded-full"
@@ -199,7 +252,9 @@ export function ReceiptScannerSection({
             />
           </div>
           <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
-            Algoritma sedang membaca angka, kata kunci total, tanggal & nama toko pada nota Anda...
+            {selectedEngine === 'tesseract'
+              ? 'Memproses gambar secara offline dengan OCR Tesseract...'
+              : 'Dianalisis menggunakan multimodal vision model Qwen2-VL dari repositori QwenLM/Qwen2-VL...'}
           </p>
         </div>
       )}
@@ -231,13 +286,20 @@ export function ReceiptScannerSection({
             <div className="flex-1 min-w-0">
               {scanResult?.totalAmount ? (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>Nominal Berhasil Terdeteksi!</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold flex-wrap">
+                    <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>Nominal Terdeteksi</span>
+                    </span>
+                    <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                      {scanResult.engineUsed === 'qwen-vl' ? 'Qwen2-VL AI' : 'Tesseract OCR'}
+                    </span>
                   </div>
+
                   <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                     {formatRupiah(scanResult.totalAmount)}
                   </div>
+
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
                     {scanResult.detectedMerchant && (
                       <span className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
@@ -303,7 +365,30 @@ export function ReceiptScannerSection({
             </div>
           </div>
 
-          {/* Jika Ada Pilihan Kandidat Nominal Lainnya dari Nota */}
+          {/* Rincian Item dari Qwen2-VL jika ada */}
+          {scanResult?.items && scanResult.items.length > 0 && (
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                Item Belanja Terbaca oleh Qwen2-VL ({scanResult.items.length}):
+              </span>
+              <div className="space-y-1 max-h-24 overflow-y-auto pr-1 text-xs">
+                {scanResult.items.map((it, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                    <span className="truncate max-w-[180px]">
+                      {it.qty ? `${it.qty}x ` : ''}{it.name}
+                    </span>
+                    {it.price ? (
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {formatRupiah(it.price)}
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pilihan Kandidat Nominal Lainnya */}
           {scanResult && scanResult.candidateAmounts.length > 1 && onSelectCandidateAmount && (
             <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">

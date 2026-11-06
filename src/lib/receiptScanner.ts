@@ -1,7 +1,9 @@
 /**
  * receiptScanner.ts
- * Utilitas OCR & parser cerdas untuk identifikasi nominal, tanggal, dan nama merchant pada nota / struk belanja.
- * Menggunakan Tesseract.js dengan prapemrosesan gambar HTML5 Canvas untuk akurasi optimal.
+ * Utilitas OCR & Vision AI untuk identifikasi nominal, tanggal, dan nama merchant pada nota / struk belanja.
+ * Mendukung dual-engine:
+ * 1. Qwen2-VL Vision AI (Alibaba Cloud / github.com/QwenLM/Qwen2-VL) untuk akurasi multimodal tertinggi
+ * 2. Tesseract.js (Client-side offline fallback) dengan prapemrosesan HTML5 Canvas
  */
 
 export interface CandidateAmount {
@@ -11,14 +13,67 @@ export interface CandidateAmount {
   confidenceScore: number;
 }
 
+export interface ReceiptItem {
+  name: string;
+  qty?: number;
+  price?: number;
+}
+
 export interface ReceiptScanResult {
   totalAmount: number | null;
   candidateAmounts: CandidateAmount[];
   detectedMerchant: string | null;
   detectedDate: string | null;
   suggestedCategoryKeyword: string | null;
+  items?: ReceiptItem[];
+  notes?: string | null;
   rawText: string;
   confidence: number;
+  engineUsed: 'qwen-vl' | 'tesseract';
+}
+
+export interface QwenVLConfig {
+  apiKey?: string;
+  provider: 'openrouter' | 'siliconflow' | 'dashscope' | 'huggingface' | 'custom';
+  customEndpoint?: string;
+  model?: string;
+  enabled: boolean;
+}
+
+const STORAGE_KEY_QWEN = 'navi_qwen_vl_config';
+
+export function getQwenVLConfig(): QwenVLConfig {
+  if (typeof window === 'undefined') {
+    return {
+      provider: 'openrouter',
+      model: 'qwen/qwen-2-vl-7b-instruct',
+      enabled: true,
+    };
+  }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_QWEN);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('Failed to read Qwen2-VL config:', e);
+  }
+
+  return {
+    provider: 'openrouter',
+    model: 'qwen/qwen-2-vl-7b-instruct',
+    enabled: true,
+  };
+}
+
+export function saveQwenVLConfig(config: QwenVLConfig): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY_QWEN, JSON.stringify(config));
+  } catch (e) {
+    console.error('Failed to save Qwen2-VL config:', e);
+  }
 }
 
 /**
@@ -68,9 +123,7 @@ export async function preprocessReceiptImage(dataUrl: string): Promise<string> {
         const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
         for (let i = 0; i < data.length; i += 4) {
-          // Grayscale luminansi
           const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-          // Contrast adjust
           const adjusted = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
           data[i] = adjusted;
           data[i + 1] = adjusted;
@@ -91,34 +144,27 @@ export async function preprocessReceiptImage(dataUrl: string): Promise<string> {
 
 /**
  * Membersihkan string angka nominal khas struk Indonesia
- * Contoh input: "TOTAL Rp 85.500,00", "75.000", "Rp.120,000", "5O.OOO" (huruf O)
  */
 export function extractCleanNominal(str: string): number | null {
   if (!str) return null;
 
-  // Ganti huruf O atau o yang sering salah dibaca OCR sebagai angka 0 jika diapit angka/titik
   let normalized = str
     .replace(/(?<=\d)[Oo](?=\d)/g, '0')
     .replace(/(?<=\d)[Oo]$/g, '0')
     .replace(/(?<=[.,])[Oo]/g, '0')
     .replace(/[Oo](?=[.,]\d)/g, '0');
 
-  // Bersihkan karakter selain digit, titik, dan koma
-  // Hapus "Rp", "RP", "IDR", dll.
   normalized = normalized.replace(/rp|idr|total|bayar|harga|subtotal|tunai|cash|kembali/gi, '');
 
-  // Cari kelompok angka dengan pola ribuan Indonesia: e.g. 15.000, 1.250.000, 15000, 15,000
   const match = normalized.match(/(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d{4,9}(?:[.,]\d{2})?|\d{3,9})/);
   if (!match) return null;
 
   let raw = match[1];
 
-  // Jika ada desimal sen belakang (,00 atau .00) di akhir, buang desimal sen
   if (/(?:[.,]00)$/.test(raw)) {
     raw = raw.replace(/[.,]00$/, '');
   }
 
-  // Jika ada titik pemisah ribuan (e.g. 50.000 atau 1.500.000)
   if (/\d+\.\d{3}/.test(raw)) {
     raw = raw.replace(/\./g, '').replace(/,/g, '');
   } else if (/\d+,\d{3}/.test(raw)) {
@@ -128,7 +174,6 @@ export function extractCleanNominal(str: string): number | null {
   }
 
   const num = parseInt(raw, 10);
-  // Rentang nominal transaksi masuk akal: Rp 1.000 s/d Rp 1.000.000.000
   if (!isNaN(num) && num >= 500 && num <= 1000000000) {
     return num;
   }
@@ -147,22 +192,18 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
 
   const candidates: CandidateAmount[] = [];
 
-  // 1. Pola Keyword Total
   const totalRegex = /\b(grand\s*total|total\s*bayar|total\s*belanja|total\s*harga|total\s*akhir|total\s*tagihan|tot\s*bayar|jml\s*bayar)\b/i;
   const generalTotalRegex = /\b(total|tagihan|jumlah)\b/i;
   const subtotalRegex = /\b(subtotal|sub\s*total)\b/i;
   const paymentRegex = /\b(tunai|cash|debit|qris|bca|mandiri|gopay|ovo|shopeepay)\b/i;
   const excludedKeywords = /\b(item|qty|barang|kembali|change|discount|diskon|potongan)\b/i;
 
-  // Analisis per baris
   lines.forEach((line, index) => {
-    // Lewati baris diskon / kembalian untuk nominal utama
     if (excludedKeywords.test(line)) return;
 
     const nominal = extractCleanNominal(line);
     if (!nominal) return;
 
-    // Tingkat prioritas
     if (totalRegex.test(line)) {
       candidates.push({
         label: 'Total Belanja',
@@ -192,7 +233,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
         confidenceScore: 70,
       });
     } else {
-      // Jika angka berada di 40% bagian bawah nota, kemungkinan besar itu total/pembayaran
       const isBottomHalf = index >= Math.floor(lines.length * 0.5);
       if (isBottomHalf && nominal >= 2000) {
         candidates.push({
@@ -205,7 +245,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
     }
   });
 
-  // Urutkan kandidat berdasarkan confidenceScore tertinggi, lalu nominal terbesar
   candidates.sort((a, b) => {
     if (b.confidenceScore !== a.confidenceScore) {
       return b.confidenceScore - a.confidenceScore;
@@ -213,7 +252,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
     return b.amount - a.amount;
   });
 
-  // Hapus duplikasi nominal pada kandidat
   const uniqueCandidates: CandidateAmount[] = [];
   const seenAmounts = new Set<number>();
   for (const c of candidates) {
@@ -226,7 +264,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
   const bestCandidate = uniqueCandidates[0] || null;
   const totalAmount = bestCandidate ? bestCandidate.amount : null;
 
-  // 2. Deteksi Merchant / Nama Toko
   let detectedMerchant: string | null = null;
   let suggestedCategoryKeyword: string | null = null;
 
@@ -252,7 +289,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
     }
   }
 
-  // Jika belum ada merchant chain, coba ambil 2 baris teratas yang bukan angka murni
   if (!detectedMerchant && lines.length > 0) {
     for (let i = 0; i < Math.min(3, lines.length); i++) {
       const candidate = lines[i].trim();
@@ -263,7 +299,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
     }
   }
 
-  // 3. Deteksi Tanggal Transaksi (DD/MM/YYYY atau DD-MM-YYYY atau YYYY-MM-DD)
   let detectedDate: string | null = null;
   const dateMatch = rawText.match(/\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b/);
   if (dateMatch) {
@@ -273,8 +308,6 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
 
     if (year < 100) year += 2000;
 
-    // Jika day > 12 dan month <= 12, aman format DD/MM/YYYY
-    // Jika terbalik (misal format MM/DD), kita batasi rentang valid
     if (day <= 31 && month <= 12 && year >= 2020 && year <= 2030) {
       detectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
@@ -288,23 +321,78 @@ export function parseReceiptText(rawText: string, ocrConfidence = 80): ReceiptSc
     suggestedCategoryKeyword,
     rawText,
     confidence: ocrConfidence,
+    engineUsed: 'tesseract',
   };
 }
 
 /**
- * Fungsi utama scan nota:
- * Menerima file atau DataURL gambar -> Prapemrosesan Canvas -> Eksekusi Tesseract OCR -> Parsing Cerdas
+ * 1. SCAN DENGAN Qwen2-VL Vision AI (Alibaba Cloud / QwenLM/Qwen2-VL)
+ * Mengirim gambar ke endpoint API internal yang terhubung ke model Qwen2-VL
  */
-export async function scanReceipt(
+export async function scanReceiptWithQwenVL(
+  imageDataUrl: string,
+  config?: Partial<QwenVLConfig>,
+  onProgress?: (progressPct: number, statusText: string) => void
+): Promise<ReceiptScanResult> {
+  onProgress?.(15, 'Mempersiapkan gambar untuk Qwen2-VL...');
+  const optimizedDataUrl = await preprocessReceiptImage(imageDataUrl);
+
+  onProgress?.(35, 'Menghubungkan ke Vision AI Qwen2-VL (QwenLM)...');
+
+  const resolvedConfig = { ...getQwenVLConfig(), ...config };
+
+  const res = await fetch('/api/ocr/qwen-vl', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      image: optimizedDataUrl,
+      apiKey: resolvedConfig.apiKey,
+      provider: resolvedConfig.provider,
+      customEndpoint: resolvedConfig.customEndpoint,
+      model: resolvedConfig.model,
+    }),
+  });
+
+  onProgress?.(70, 'Qwen2-VL sedang membaca teks & struktur nota...');
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    const msg = errorJson.message || `Gagal memanggil Qwen2-VL (HTTP ${res.status})`;
+    throw new Error(msg);
+  }
+
+  const json = await res.json();
+  if (!json.success || !json.data) {
+    throw new Error(json.message || 'Gagal mengekstrak data struk dengan Qwen2-VL');
+  }
+
+  onProgress?.(100, 'Analisis Qwen2-VL selesai!');
+
+  return {
+    totalAmount: json.data.totalAmount,
+    candidateAmounts: json.data.candidateAmounts || [],
+    detectedMerchant: json.data.detectedMerchant,
+    detectedDate: json.data.detectedDate,
+    suggestedCategoryKeyword: json.data.suggestedCategoryKeyword,
+    items: json.data.items || [],
+    notes: json.data.notes || null,
+    rawText: json.data.rawText || '',
+    confidence: json.data.confidence || 98,
+    engineUsed: 'qwen-vl',
+  };
+}
+
+/**
+ * 2. SCAN DENGAN Tesseract.js (Offline Fallback Engine)
+ */
+export async function scanReceiptWithTesseract(
   imageDataUrl: string,
   onProgress?: (progressPct: number, statusText: string) => void
 ): Promise<ReceiptScanResult> {
-  // 1. Prapemrosesan
   onProgress?.(10, 'Mengoptimalkan kualitas gambar nota...');
   const optimizedDataUrl = await preprocessReceiptImage(imageDataUrl);
 
-  // 2. Inisialisasi Tesseract.js secara dinamis
-  onProgress?.(25, 'Memuat modul OCR cerdas...');
+  onProgress?.(25, 'Memuat modul OCR Tesseract...');
   const { createWorker } = await import('tesseract.js');
 
   const worker = await createWorker('eng', 1, {
@@ -329,5 +417,41 @@ export async function scanReceipt(
     return parsed;
   } finally {
     await worker.terminate();
+  }
+}
+
+/**
+ * 3. HYBRID SCANNER
+ * Mencoba Qwen2-VL terlebih dahulu untuk kualitas analisis tertinggi.
+ * Jika tidak ada API key atau terjadi kegagalan jaringan, otomatis fallback ke Tesseract offline!
+ */
+export async function scanReceipt(
+  imageDataUrl: string,
+  onProgress?: (progressPct: number, statusText: string) => void,
+  preferredEngine: 'auto' | 'qwen-vl' | 'tesseract' = 'auto',
+  config?: Partial<QwenVLConfig>
+): Promise<ReceiptScanResult> {
+  const currentConfig = { ...getQwenVLConfig(), ...config };
+
+  // Jika user memilih spesifik Tesseract
+  if (preferredEngine === 'tesseract') {
+    return scanReceiptWithTesseract(imageDataUrl, onProgress);
+  }
+
+  // Jika user memilih Qwen2-VL atau Auto
+  try {
+    onProgress?.(10, 'Menganalisis nota dengan Qwen2-VL Vision AI...');
+    return await scanReceiptWithQwenVL(imageDataUrl, currentConfig, onProgress);
+  } catch (err: any) {
+    console.warn('Qwen2-VL tidak tersedia atau terjadi error, beralih ke Tesseract offline:', err?.message);
+
+    if (preferredEngine === 'qwen-vl') {
+      // Jika user secara eksplisit memilih Qwen2-VL, lemparkan error agar user tahu
+      throw err;
+    }
+
+    // Auto-fallback ke Tesseract
+    onProgress?.(20, 'Beralih ke pemindaian lokal Tesseract OCR...');
+    return await scanReceiptWithTesseract(imageDataUrl, onProgress);
   }
 }
